@@ -24,8 +24,18 @@ import HelloWorld from './components/HelloWorld.vue';
 
 export default {
   name: 'App',
+  data() {
+    return {
+      amp: {
+        users: [],
+        assets: [],
+        categories: [],
+        managers: [],
+      },
+    }
+  },
   components: {
     'hello-world': HelloWorld
-  }
+  },
 }
 </script>
