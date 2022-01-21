@@ -15,7 +15,7 @@
         <tbody>
           <tr v-if="!loaded"><td colspan="3">Loading...</td></tr>
           <tr v-if="loaded && !Object.keys(users).length"><td colspan="3">No registered users</td></tr>
-          <tr v-for="(user, i) in users" :key="i">
+          <tr v-for="(user, i) in users" :key="i" @click="selectUser(user.id)">
             <td>{{user.id}}</td><td>{{user.name}}</td><td>{{user.GAID}}</td>
           </tr>
 
@@ -32,6 +32,12 @@ export default {
   data() {
     return {
     }
+  },
+  methods: {
+    selectUser(uid){
+      console.log(this.$store.state.users[uid]);
+      this.$router.push(`/user/${uid}`);
+    },
   },
   computed: {
     users () {

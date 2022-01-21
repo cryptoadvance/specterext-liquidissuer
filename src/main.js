@@ -8,11 +8,14 @@ import Assets from './routes/Assets';
 import Users from './routes/Users';
 import Categories from './routes/Categories';
 import Managers from './routes/Managers';
+
+import User from './routes/User';
+
 import Navbar from './components/Navbar';
 
 // remove for production api
-const SUFFIX = ".json"; // for static data
-const API = "/api";
+const SUFFIX = ""; // for static data
+const API = "http://localhost:8081/api";
 const TOKEN = "qwe";
 
 class Amp {
@@ -66,6 +69,7 @@ const routes = [
   { "path": "/categories", "component": Categories, "name": "Categories" },
   { "path": "/assets", "component": Assets, "name": "Assets" },
   { "path": "/managers", "component": Managers, "name": "Managers" },
+  { "path": "/user/:userId", "component": User, "name": "User details" },
 ];
 
 const router = new VueRouter({routes});
@@ -98,15 +102,6 @@ const store = new Vuex.Store({
   }
 });
 
-// const dummy = {
-//   message: "my global message"
-// }
-
-// dummy.install = function(){
-//   Object.defineProperty(Vue.prototype, '$dummy', {
-//     get () { return dummy }
-//   })
-// }
 Vue.component('nav-bar', Navbar);
 
 window.app = new Vue({

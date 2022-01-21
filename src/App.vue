@@ -26,7 +26,6 @@ export default {
   name: 'App',
   data() {
     return {
-      title: '',
     }
   },
   watch: {
@@ -35,7 +34,7 @@ export default {
       handler(to) {
         document.title = `Amp issuer - ${to.name}`;
         this.title = to.name;
-      }
+      },
     },
   },
 }
