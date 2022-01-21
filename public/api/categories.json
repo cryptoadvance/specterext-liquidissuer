@@ -1,0 +1,18 @@
+[
+  {
+    "id": 12,
+    "name": "kyced",
+    "description": "Verified with KYC",
+    "investors": [
+      44,
+      45
+    ],
+    "registered_users": [
+      44,
+      45
+    ],
+    "assets": [
+      "35bec770-03cc-47e7-aa64-cc9a943b71fd"
+    ]
+  }
+]

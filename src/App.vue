@@ -4,38 +4,36 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  /*color: #2c3e50;*/
+  margin: auto;
+  width: 100%;
+  max-width: 1000px;
   margin-top: 60px;
 }
 </style>
 
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <router-link to="/login">Login</router-link>
-    <router-link to="/">Dashboard</router-link>
+    <h1>Amp issuer</h1>
+    <nav class="row center">
+      <router-link to="/" class="btn radio left">Dashboard</router-link>
+      <router-link to="/assets" class="btn radio">Assets</router-link>
+      <router-link to="/categories" class="btn radio">Categories</router-link>
+      <router-link to="/users" class="btn radio">Users</router-link>
+      <router-link to="/managers" class="btn radio right">Managers</router-link>
+    </nav>
     <router-view/>
-    <hello-world msg="Welcome to Your Vue.js App"/>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue';
 
 export default {
   name: 'App',
   data() {
-    return {
-      amp: {
-        users: [],
-        assets: [],
-        categories: [],
-        managers: [],
-      },
-    }
+    return {}
   },
   components: {
-    'hello-world': HelloWorld
   },
 }
 </script>
