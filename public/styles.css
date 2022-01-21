@@ -1,4 +1,4 @@
-html, body{
+html, #app{
     /* network colors */
     --test-color:         #00F100;
     --main-color:         #FF9A00;
@@ -16,6 +16,8 @@ html, body{
     --cmap-border:        #506072;
     --cmap-border-darker: #405062;
 
+}
+html, body{
     margin: 0;
     padding: 0;
     background: var(--cmap-bg);
@@ -177,7 +179,8 @@ td, th{
     border-bottom: 1px solid var(--cmap-bg-lightest);
 }
 tr, thead{
-    background: var(--cmap-bg-ligher);
+    /*background: var(--cmap-bg-ligher);*/
+    background: #263044;
 }
 th{
     text-align: left;
@@ -187,4 +190,11 @@ th{
 tbody tr:hover{
     background: rgba(255,255,255,0.03);
     color: #fff;
+}
+th{
+    text-align: center;
+    font-weight: bold;
+}
+td{
+    cursor: pointer;
 }

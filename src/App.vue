@@ -14,14 +14,8 @@
 
 <template>
   <div id="app">
-    <h1>Amp issuer</h1>
-    <nav class="row center">
-      <router-link to="/" class="btn radio left">Dashboard</router-link>
-      <router-link to="/assets" class="btn radio">Assets</router-link>
-      <router-link to="/categories" class="btn radio">Categories</router-link>
-      <router-link to="/users" class="btn radio">Users</router-link>
-      <router-link to="/managers" class="btn radio right">Managers</router-link>
-    </nav>
+    <h1>{{title}}</h1>
+    <nav-bar/>
     <router-view/>
   </div>
 </template>
@@ -31,9 +25,18 @@
 export default {
   name: 'App',
   data() {
-    return {}
+    return {
+      title: '',
+    }
   },
-  components: {
+  watch: {
+    $route: {
+      immediate: true,
+      handler(to) {
+        document.title = `Amp issuer - ${to.name}`;
+        this.title = to.name;
+      }
+    },
   },
 }
 </script>
