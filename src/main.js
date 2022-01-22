@@ -21,39 +21,10 @@ const TOKEN = "qwe";
 class Amp {
   constructor(api, token=null){
     this.api = api;
-    this._data = {
-      users: {},
-      assets: {},
-      categories: {},
-      managers: {},
-    }
-    if(token){
-      this.login(token)
-    }
-  }
-  async login(token){
     this.token = token;
-    let [users, assets, categories] = await Promise.all([
-      fetch(`${this.api}/registered_users${SUFFIX}`),
-      fetch(`${this.api}/assets${SUFFIX}`),
-      fetch(`${this.api}/categories${SUFFIX}`),
-    ]);
-    // from list to dict conversion
-    (await users.json()).forEach((user)=>{
-      this._data.users[user.id] = user;
-    });
-    (await assets.json()).forEach((asset)=>{
-      this._data.assets[asset.asset_uuid] = asset;
-    });
-    (await categories.json()).forEach((category) => {
-      this._data.categories[category.id] = category;
-    });
   }
   get loginRequired(){
     return (this.token == null);
-  }
-  get users(){
-    return this._data.users;
   }
 }
 window.amp = new Amp(API, TOKEN);
