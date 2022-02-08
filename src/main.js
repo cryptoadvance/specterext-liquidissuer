@@ -1,17 +1,20 @@
 import Vue from 'vue';
-import Vuex from 'vuex';
 import VueRouter from 'vue-router';
+import {store} from './store';
+
 import App from './App.vue';
 import Login from './routes/Login';
 import Dashboard from './routes/Dashboard';
 import Assets from './routes/Assets';
+import Asset from './routes/Asset';
 import Users from './routes/Users';
 import Categories from './routes/Categories';
 import Managers from './routes/Managers';
-
 import User from './routes/User';
 
-import Navbar from './components/Navbar';
+
+// import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 
 // remove for production api
 const SUFFIX = ""; // for static data
@@ -31,7 +34,6 @@ window.amp = new Amp(API, TOKEN);
 
 Vue.config.productionTip = false;
 Vue.use(VueRouter);
-Vue.use(Vuex);
 
 const routes = [
   { "path": "/", "component": Dashboard, "name": "Dashboard" },
@@ -39,41 +41,14 @@ const routes = [
   { "path": "/users", "component": Users, "name": "Users" },
   { "path": "/categories", "component": Categories, "name": "Categories" },
   { "path": "/assets", "component": Assets, "name": "Assets" },
+  { "path": "/assets/:auid", "component": Asset, "name": "Asset" },
   { "path": "/managers", "component": Managers, "name": "Managers" },
   { "path": "/user/:userId", "component": User, "name": "User details" },
 ];
 
 const router = new VueRouter({routes});
 
-const store = new Vuex.Store({
-  state: {
-    users: {},
-    categories: {},
-    assets: {},
-    managers: {},
-    loaded: false,
-  },
-  mutations: {
-    setUsers(state, users){
-      if(!state.loaded){ state.loaded = true; }
-      state.users = users;
-    },
-    setCategories(state, categories){
-      if(!state.loaded){ state.loaded = true; }
-      state.categories = categories;
-    },
-    setAssets(state, assets){
-      if(!state.loaded){ state.loaded = true; }
-      state.assets = assets;
-    },
-    setManagers(state, managers){
-      if(!state.loaded){ state.loaded = true; }
-      state.managers = managers;
-    },
-  }
-});
-
-Vue.component('nav-bar', Navbar);
+Vue.component('side-bar', Sidebar);
 
 window.app = new Vue({
   data: {
