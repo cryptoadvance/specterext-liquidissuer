@@ -34,16 +34,60 @@
       </div>
       <hr/>
       <div class="actions">
-        <a href="#">Dashboard</a>
-        <a href="#">Assignments</a>
-        <a href="#">Distributions</a>
-        <a href="#">Activities</a>
-        <a href="#">UTXOs</a>
-        <a href="#">Users</a>
+        <router-link to="./dashboard/">Dashboard</router-link>
+        <router-link to="./assignments/">Assignments</router-link>
+        <router-link to="./distributions/">Distributions</router-link>
+        <router-link to="./activities/">Activities</router-link>
+        <router-link to="./utxos/">UTXOs</router-link>
+        <router-link to="./users/">Users</router-link>
       </div>
     </div>
     <hr/>
-    <h1>Uncomplete distributions – 3</h1>
-    <div class="small tight-top">Select distributions from the list to sign and broadcast</div>
+
+    <div class="inner">
+      <h1>Uncomplete distributions – 3</h1>
+      <div class="small tight-top">Select distributions from the list to sign and broadcast</div>
+    </div>
+    <table class="table">
+      <thead><tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Amount</th>
+        <th>Transactions</th>
+        <th>Users</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td>123456</td>
+          <td>Draft</td>
+          <td>321.38</td>
+          <td>1</td>
+          <td>3</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="inner">
+      <h1>Pending assignments – 2</h1>
+      <div class="small tight-top">Select assignments from the list to create a new distribution</div>
+    </div>
+    <table class="table">
+      <thead><tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Amount</th>
+        <th>Transactions</th>
+        <th>Users</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td>123456</td>
+          <td>Draft</td>
+          <td>321.38</td>
+          <td>1</td>
+          <td>3</td>
+        </tr>
+      </tbody>
+    </table>
   </main>
 </template>

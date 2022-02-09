@@ -19,6 +19,7 @@ html, body, #app{
     --cmap-bg-lightest:   #263044;
     --cmap-border:        #506072;
     --cmap-border-darker: #405062;
+    --cmap-border-darkest:#323E50;
     /* for buttons and stuff */
     --cmap-default:       #506072;
     --cmap-default-darker:#394659;
@@ -246,5 +247,54 @@ hr{
     border-radius: var(--cmap-radius);
     box-sizing: content-box;
     padding: 20px;
-    margin: 20px -20px;
+    margin: 20px 0;
+}
+.inner {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+/* TABLE */
+
+.table{
+    border-collapse: collapse;
+    font-size: 14px;
+    width: 100%;
+    border: 1px solid var(--cmap-border-darkest);
+    background: var(--cmap-bg-lightest);
+    margin: 20px 0;
+}
+.table-holder{
+    padding: 0 30px;
+    width: 100%;
+    /*overflow-x: scroll;*/
+}
+.full-width{
+    width: 100%;
+    /*height: 100%;*/
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.table td, .table th{
+    padding: 20px 10px;
+    border-bottom: 1px solid var(--cmap-border-darkest);
+}
+.table tr, .table thead{
+    background: var(--cmap-bg-ligher);
+}
+.table th{
+    text-align: left;
+    font-weight: inherit;
+    color: rgba(255,255,255,0.5);
+    border-bottom: 3px solid var(--cmap-border-darkest);
+}
+.table tr > *:first-child{
+    padding-left: 20px;
+}
+.table tbody tr:hover{
+    background: rgba(255,255,255,0.03);
+    color: #fff;
 }

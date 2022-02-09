@@ -1,11 +1,11 @@
 <template>
   <main>
-    <div class="row">
+    <div class="row inner">
       <h1>Assets</h1>
       <a class="btn tight-right" href="#"><img src="img/add.svg"/> New asset</a>
     </div>
     <div class="summary">
-      <router-link to="/assets/asset-uid">LGOO – Liquid Goo</router-link><br>
+      <router-link to="/assets/asset-uid/">LGOO – Liquid Goo</router-link><br>
       <small>Asset Id: e3304b5cb8157f406635e8bd4215d4a109a5e4cdf26d3dfa5fc6e74dfe72be7f</small>
       <hr/>
       <div class="row even">

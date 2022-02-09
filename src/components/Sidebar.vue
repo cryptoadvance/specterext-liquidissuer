@@ -9,7 +9,7 @@
         <small>1670906 blocks</small>
       </div>
     </router-link>
-    <router-link to="/assets">
+    <router-link to="/assets/">
       <div class="menu-icon">
         <img src="img/asset.svg"/>
       </div>
@@ -29,7 +29,7 @@
       </a>
     </div>
  -->
-    <router-link to="/categories">
+    <router-link to="/categories/">
       <div class="menu-icon">
         <img src="img/category.svg"/>
       </div>
@@ -38,7 +38,7 @@
         <small>2 categories</small>
       </div>
     </router-link>
-    <router-link to="/users">
+    <router-link to="/users/">
       <div class="menu-icon">
         <img src="img/users.svg"/>
       </div>
@@ -47,7 +47,7 @@
         <small>73 users</small>
       </div>
     </router-link>
-    <router-link to="/managers">
+    <router-link to="/managers/">
       <div class="menu-icon">
         <img src="img/managers.svg"/>
       </div>
@@ -56,7 +56,7 @@
         <small>0 managers</small>
       </div>
     </router-link>
-    <router-link to="/treasury">
+    <router-link to="/treasury/">
       <div class="menu-icon">
         <img src="img/treasury.svg"/>
       </div>
@@ -66,7 +66,7 @@
       </div>
     </router-link>
     <div class="spacer"></div>
-    <router-link to="/settings">
+    <router-link to="/settings/">
       <div class="menu-icon">
         <img src="img/settings.svg"/>
       </div>

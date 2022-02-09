@@ -1,25 +1,50 @@
 <template>
   <main>
-    <div class="table-holder">
-      <router-link to="/new_asset" class="btn" style="max-width: 180px;margin-left:auto;">
-        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg>
-        Add new asset
-      </router-link>
+    <div class="row inner">
+      <h1>Assets</h1>
+      <router-link class="btn tight-right" to="/new_asset/"><img src="img/add.svg"/> New asset</router-link>
     </div>
-    <br>
-    <div class="table-holder">
-      <table>
-        <thead>
-			<tr><th>Ticker</th><th>Name</th><th>Asset ID</th><th>Requirements</th></tr>
-        </thead>
-        <tbody>
-          <tr v-if="!loaded"><td colspan="4">Loading...</td></tr>
-          <tr v-if="loaded && !Object.keys(assets).length"><td colspan="4">No assets</td></tr>
-          <tr v-for="(ass, i) in assets" :key="i">
-            <td>{{ass.ticker}}</td><td>{{ass.name}}</td><td>{{ass.asset_id}}</td><td>{{ass.requirements.length}}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-if="!loaded">Loading...</div>
+
+    <div class="summary" v-for="(ass, i) in assets" :key="i">
+      <router-link :to="'/assets/'+ass.asset_uuid+'/'">{{ass.ticker}} – {{ass.name}}</router-link><br>
+      <small>Asset Id: {{ass.asset_id}}</small>
+      <hr/>
+      <div class="row even">
+        <div>
+          <h2>General information</h2>
+          <table class="labeled">
+            <tr><td>Type:</td><td>{{ass.type}}</td></tr>
+            <tr><td>Status:</td><td>active, registered, authorized</td></tr>
+            <tr><td>Requirements:</td><td><a href="#" class="tag">kyced</a><a href="#" class="tag">verified</a></td></tr>
+            <tr><td>Treasury:</td><td>Jade HW</td></tr>
+          </table>
+        </div>
+        <div>
+          <h2>Blockchain information</h2>
+          <table class="labeled">
+            <tr><td>Issued total:</td><td>21 000 000</td></tr>
+            <tr><td>Reissuance:</td><td>1</td></tr>
+            <tr><td>Owners:</td><td>56 users, 10 543 distributed</td></tr>
+            <tr><td>Locked UTXOs:</td><td>7</td></tr>
+          </table>
+        </div>
+        <div>
+          <h2>AMP actions</h2>
+          <table class="labeled">
+            <tr><td>Assignments:</td><td>17 pending, 34 total</td></tr>
+            <tr><td>Distributions:</td><td>3 unsigned, 12 total</td></tr>
+            <tr><td>Lost UTXOs:</td><td>2</td></tr>
+          </table>
+        </div>
+      </div>
+      <hr/>
+      <div class="actions right">
+        <router-link :to="'/assets/'+ass.asset_uuid+'/dashboard/'">Dashboard</router-link>
+        <router-link :to="'/assets/'+ass.asset_uuid+'/assignments/'">Assignments</router-link>
+        <router-link :to="'/assets/'+ass.asset_uuid+'/distributions/'">Distributions</router-link>
+        <router-link :to="'/assets/'+ass.asset_uuid+'/history/'">History</router-link>
+      </div>
     </div>
   </main>
 </template>
@@ -34,8 +59,7 @@ export default {
   },
   computed: {
     assets () {
-      let aids = Object.keys(this.$store.state.assets).sort();
-      return aids.map((aid) => this.$store.state.assets[aid]);
+      return this.$store.getters.assetsSummary();
     },
     loaded(){
       return this.$store.state.loaded;
