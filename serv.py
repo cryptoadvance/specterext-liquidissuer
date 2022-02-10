@@ -19,19 +19,60 @@ def index():
 def assets():
     return render_template('assets.jinja', amp=amp)
 
-@app.route("/assets/<asset_uuid>/")
-def asset(asset_uuid):
-    return render_template('base.jinja', amp=amp)
-
 @app.route("/new_asset/")
 def new_asset():
     return render_template('base.jinja', amp=amp)
+
+@app.route("/assets/<asset_uuid>/")
+def asset(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('asset/dashboard.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/assignments/")
+def asset_assignments(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/distributions/")
+def asset_distributions(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/activities/")
+def asset_activities(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/utxos/")
+def asset_utxos(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/users/")
+def asset_users(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/new_assignment/")
+def new_assignment(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/new_distribution/")
+def new_distribution(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    return render_template('base.jinja', amp=amp, asset=asset)
+
 
 
 
 
 @app.route("/categories/")
 def categories():
+    return render_template('categories.jinja', amp=amp)
+
+@app.route("/new_category/")
+def new_category():
     return render_template('base.jinja', amp=amp)
 
 @app.route("/categories/<cid>/")
@@ -43,7 +84,17 @@ def category(cid):
 
 @app.route("/users/")
 def users():
+    return render_template('users.jinja', amp=amp)
+
+@app.route("/new_user/")
+def new_user():
     return render_template('base.jinja', amp=amp)
+
+@app.route("/users/<uid>/")
+def user(uid):
+    uid = int(uid)
+    user = amp.users[uid]
+    return render_template('base.jinja', amp=amp, user=user)
 
 
 

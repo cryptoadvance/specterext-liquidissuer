@@ -95,6 +95,16 @@ class Asset(dict):
     def categories(self):
         return {cat: self.amp.categories[cat] for cat in self['requirements']}
 
+class User(dict):
+    def __init__(self, amp, **kwargs):
+        self.amp = amp
+        super().__init__(**kwargs)
+
+    @property
+    def categories(self):
+        return {cat: self.amp.categories[cat] for cat in self['categories']}
+
+
 class Amp:
     def __init__(self, api, auth) -> None:
         self.api = api
@@ -142,7 +152,7 @@ class Amp:
         return json.loads(txt)
 
     def sync(self):
-        self.users = list2dict(self.fetch_json("/registered_users"))
+        self.users = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
         self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
         self.categories = list2dict(self.fetch_json("/categories"))
         self.managers = list2dict(self.fetch_json("/managers"))

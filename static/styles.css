@@ -231,6 +231,7 @@ nav .spacer{
     background: var(--cmap-default);
     border-radius: var(--cmap-radius);
     padding: 10px 30px;
+    height: 42px;
 }
 .btn img,
 button img{
@@ -297,4 +298,11 @@ hr{
 .table tbody tr:hover{
     background: rgba(255,255,255,0.03);
     color: #fff;
+}
+.table td img{
+    width: 20px;
+    height: auto;
+    margin-right: 5px;
+    vertical-align: text-bottom;
+    margin-bottom: -2px;
 }
