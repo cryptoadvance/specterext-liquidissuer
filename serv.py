@@ -75,7 +75,7 @@ def categories():
 def new_category():
     return render_template('base.jinja', amp=amp)
 
-@app.route("/categories/<cid>/")
+@app.route("/categories/<int:cid>/")
 def category(cid):
     return render_template('base.jinja', amp=amp)
 
@@ -90,9 +90,8 @@ def users():
 def new_user():
     return render_template('base.jinja', amp=amp)
 
-@app.route("/users/<uid>/")
+@app.route("/users/<int:uid>/")
 def user(uid):
-    uid = int(uid)
     user = amp.users[uid]
     return render_template('base.jinja', amp=amp, user=user)
 
