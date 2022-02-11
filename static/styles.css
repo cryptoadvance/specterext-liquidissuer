@@ -27,6 +27,9 @@ html, body, #app{
     --cmap-blue-darker:   #3575C0;
     --cmap-red:           #A12737;
     --cmap-red-darker:    #951E2D;
+    --cmap-orange:        #DF7B00;
+    --cmap-orange-darker: #C56100;
+
     /* text stuff */
     --cmap-text:          #fff;
     --cmap-opa:           0.7;
@@ -216,6 +219,8 @@ table.labeled tr td:first-child{
 main{
     flex-grow: 1;
     padding: 30px 50px;
+    height: 100%;
+    overflow-y: scroll;
 }
 a {
     color: var(--cmap-text);
@@ -228,18 +233,41 @@ nav .spacer{
     flex-grow: 1;
 }
 .btn, button{
-    background: var(--cmap-default);
+    white-space: nowrap;
+    background: var(--cmap-default-darker);
     border-radius: var(--cmap-radius);
     padding: 10px 30px;
-    height: 42px;
+    max-height: 45px;
+    color: #fff;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: inherit;
 }
 .btn img,
 button img{
     margin-right: 10px;
 }
-.btn:hover, button:hover{
-    background: var(--cmap-default-darker);
+.btn:hover,
+button:hover{
+    background: var(--cmap-default);
 }
+.btn.danger,
+button.danger{
+    background: var(--cmap-red-darker);
+}
+.btn.danger:hover,
+button.danger:hover{
+    background: var(--cmap-red);
+}
+.btn.warning,
+button.warning{
+    background: var(--cmap-orange-darker);
+}
+.btn.warning:hover,
+button.warning:hover{
+    background: var(--cmap-orange);
+}
+
 hr{
     border: 0px;
 }
@@ -305,4 +333,52 @@ hr{
     margin-right: 5px;
     vertical-align: text-bottom;
     margin-bottom: -2px;
+}
+img.tiny,
+.table td img.tiny{
+    width: auto;
+    height: 16px;
+    margin-right: 2px;
+    vertical-align: text-bottom;
+    margin-bottom: 0px;
+}
+tr td.onhover > * {
+    visibility: hidden;
+}
+tr:hover td.onhover > * {
+    visibility: inherit;
+}
+
+/* FORM ELEMENTS */
+input, textarea, .input, select {
+    border: 1px solid var(--cmap-bg-lightest);
+    background: var(--cmap-bg);
+    border-radius: var(--cmap-radius);
+    padding: 8px 15px 8px 10px;
+    width: 100%;
+    font-size: inherit;
+    font-weight: inherit;
+    min-width: 170px;
+    color: #fff;
+}
+label.inline{
+    display: flex;
+    flex-direction: row;
+}
+label.inline input[type="checkbox"]{
+    width: 20px;
+    min-width: 20px;
+}
+
+/* ERROR MESSAGES CONTAINER */
+#messages{
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 99999;
+    margin-left: -25%;
 }

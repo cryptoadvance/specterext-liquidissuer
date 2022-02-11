@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from multiprocessing.sharedctypes import Value
+from flask import Flask, flash, redirect, render_template, request, url_for
 from amp import Amp
 
 app = Flask(__name__)
@@ -53,10 +54,38 @@ def asset_users(asset_uuid):
     asset = amp.assets[asset_uuid]
     return render_template('base.jinja', amp=amp, asset=asset)
 
-@app.route("/assets/<asset_uuid>/new_assignment/")
+@app.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
 def new_assignment(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    if request.method == "GET":
+        return render_template('new_assignment.jinja', amp=amp, asset=asset)
+    # if POST request
+    ass = []
+    for uid in asset.users:
+        amount = request.form.get(f"amount_{uid}", "")
+        if not amount:
+            continue
+        try:
+            amount = int(amount)
+            if amount < 0:
+                raise ValueError()
+        except:
+            flash(f"Invalid amount: {amount}", "error")
+            return render_template('new_assignment.jinja', amp=amp, asset=asset)
+        if amount == 0:
+            continue
+        ass.append({
+            "registered_user": uid,
+            "ready_for_distribution": bool(request.form.get(f"ready_for_distribution_{uid}", "")),
+            "amount": amount,
+            "vesting_timestamp": None,
+        })
+    try:
+        asset.create_assignment(ass)
+        flash("Assignment created sucessfully")
+    except Exception as e:
+        flash(str(e), "error")
+    return redirect(url_for('asset', asset_uuid=asset_uuid))
 
 @app.route("/assets/<asset_uuid>/new_distribution/")
 def new_distribution(asset_uuid):
@@ -124,5 +153,7 @@ def api(path):
     return amp.fetch(path, request.method, request.data)
 
 if __name__ == "__main__":
+    import os
     amp.sync()
+    app.secret_key = 'shitcoin factory'
     app.run(debug=True, port=8081)

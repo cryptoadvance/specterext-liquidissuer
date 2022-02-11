@@ -1,54 +1,72 @@
 {% extends "base.jinja" %}
 {% block main %}
 <main>
-    <div class="summary">
-        <h1>{{ asset.ticker }} – {{ asset.name }}</h1>
-        <small>Asset Id: {{ asset.asset_id }}</small>
-        <hr/>
-        <div class="row even">
-            <div>
-                <h2>General information</h2>
-                <table class="labeled">
-                    <tr><td>Type:</td><td>{{ asset.asset_type }}</td></tr>
-                    <tr><td>Status:</td><td>{{ asset.status }}</td></tr>
-                    <tr><td>Requirements:</td><td>
-                        {% for cid, cat in asset.categories.items() %}
-                        <a href="{{ url_for('category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
-                        {% endfor %}
-                    </td></tr>
-                    <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
-                </table>
-            </div>
-            <div>
-                <h2>Blockchain information</h2>
-                {% set summary = asset.summary %}
-                <table class="labeled">
-                    <tr><td>Issued total:</td><td>{{ summary['issued'] + summary['reissued'] }} </td></tr>
-                    <tr><td>Reissuance:</td><td>{{ summary['reissuance_tokens'] }}</td></tr>
-                    <tr><td>Owners:</td><td>{{ summary['active_registered_users'] }} users, {{ summary['distributed'] }} distributed</td></tr>
-                    <tr><td>Blacklisted:</td><td>{{ summary['blacklisted'] }}</td></tr>
-                </table>
-            </div>
-            <div>
-                <h2>AMP stats</h2>
-                <table class="labeled">
-                    <tr><td>Assignments:</td><td>{{ asset.pending_assignments | length }} pending, {{ asset.assignments | length }} total</td></tr>
-                    <tr><td>Distributions:</td><td>{{ asset.unconfirmed_distributions | length }} unconfirmed, {{ asset.distributions | length }} total</td></tr>
-                    <tr><td>Lost outputs:</td><td>{{ (asset.lost_outputs['lost_outputs'] | length) + (asset.lost_outputs['reissuance_lost_outputs'] | length) }}</td></tr>
-                </table>
-            </div>
+    {% include "includes/asset_summary.jinja" %}
+
+    <div class="inner row">
+        <div>
+            <h1>Pending assignments – {{ asset.pending_assignments | length }}</h1>
+            <div class="small tight-top">Select assignments from the list to create a new distribution</div>
         </div>
-        <hr/>
-        <div class="actions">
-            {# TODO: url_for #}
-            <a href="{{url_for('asset', asset_uuid=asset.asset_uuid)}}">Dashboard</a>
-            <a href="{{url_for('asset_assignments', asset_uuid=asset.asset_uuid)}}">Assignments</a>
-            <a href="{{url_for('asset_distributions', asset_uuid=asset.asset_uuid)}}">Distributions</a>
-            <a href="{{url_for('asset_utxos', asset_uuid=asset.asset_uuid)}}">UTXOs</a>
-            <a href="{{url_for('asset_activities', asset_uuid=asset.asset_uuid)}}">Activities</a>
-            <a href="{{url_for('asset_users', asset_uuid=asset.asset_uuid)}}">Users</a>
-        </div>
+        <a class="btn tight-right" href="{{ url_for('new_assignment', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('static', filename='img/add.svg') }}"/> New assignment</a>
     </div>
+    <table class="table">
+        <thead><tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th width="200px"><!-- Actions --></th>
+        </tr></thead>
+        <tbody>
+            {# <form action="{{url_for('new_assignment', asset_uuid=asset.asset_uuid)}}" method="POST">
+            <tr>
+                <td><img class="tiny" src="{{ url_for('static', filename='img/add.svg') }}"/></td>
+                <td>
+                    <div class="custom-select">
+                    <select name="registered_user">
+                        <option value="">Please select a user</option>
+                        {% for uid, user in amp.users.items() %}
+                        <option value="{{uid}}">{{user['name']}} – {{user['GAID']}}</option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                </td>
+                <td><input type="number" placeholder="amount" name="amount"/></td>
+                <td>
+                    <label for="ready_for_distribution" class="inline">
+                        <input type="checkbox" checked id="ready_for_distribution" name="ready_for_distribution">
+                        <div>Ready for distribution</div>
+                    </label>
+                </td>
+                <td>
+                    <button type="submit" class="btn" name="submit"><img class="tiny" src="{{ url_for('static', filename='img/add.svg') }}"/> Create assignment</button>
+                </td>
+            </tr>
+            </form> #}
+        {% if not asset.pending_assignments %}
+            <tr><td colspan=5>No pending assignments</td></tr>
+        {% endif %}
+        {% for ass in asset.pending_assignments %}
+            <tr>
+                <td>{{ass['id']}}</td>
+                <td>{{amp.users[ass['registered_user']]['name']}}</td>
+                <td>{{ass['amount']}}</td>
+                <td>{{'Ready' if ass['ready_for_distribution'] else 'Locked'}}</td>
+                <td class="onhover" width="300px" style="text-align: right">
+                    {% if ass['ready_for_distribution'] %}
+                    <a href="#" class="btn"><img class="tiny" src="{{ url_for('static', filename='img/lock.svg') }}"/> Lock</a>
+                    {% else %}
+                    <a href="#" class="btn"><img class="tiny" src="{{ url_for('static', filename='img/unlock.svg') }}"/> Unlock</a>
+                    {% endif %}
+                    <a href="#" class="btn danger"><img class="tiny" src="{{ url_for('static', filename='img/delete.svg') }}"/> Delete</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <hr/>
+
     <div class="row inner">
         <div>
             <h1>Unconfirmed distributions – {{ asset.unconfirmed_distributions | length }}</h1>
@@ -80,35 +98,6 @@
         </tbody>
     </table>
     <hr/>
-    <div class="row inner">
-        <div>
-            <h1>Pending assignments – {{ asset.pending_assignments | length }}</h1>
-            <div class="small tight-top">Select assignments from the list to create a new distribution</div>
-        </div>
-        <a class="btn tight-right" href="{{ url_for('new_assignment', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('static', filename='img/add.svg') }}"/> New assignment</a>
-    </div>
-    <table class="table">
-        <thead><tr>
-            <th>ID</th>
-            <th>Status</th>
-            <th>Amount</th>
-            <th>Transactions</th>
-            <th>Users</th>
-        </tr></thead>
-        <tbody>
-        {% if not asset.pending_assignments %}
-            <tr><td colspan=5>No pending assignments</td></tr>
-        {% endif %}
-        {% for ass in asset.pending_assignments %}
-            <tr>
-                <td>123456</td>
-                <td>Draft</td>
-                <td>321.38</td>
-                <td>1</td>
-                <td>3</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+
 </main>
 {% endblock %}

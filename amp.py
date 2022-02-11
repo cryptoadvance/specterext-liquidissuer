@@ -24,6 +24,20 @@ class Asset(dict):
         self._lost_outputs = None
         super().__init__(**kwargs)
 
+    def create_assignment(self, assignments):
+        for ass in assignments:
+            self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/create", method="POST", data=json.dumps({"assignments": [ass]}))
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
+        self._assignments = None
+
+    @property
+    def users(self):
+        return {
+            uid: user
+            for uid,user in self.amp.users.items()
+            if all([cid in user.categories for cid in self['requirements']])
+        }
+
     @property
     def summary(self):
         if not self._summary:
@@ -144,6 +158,13 @@ class Amp:
         except:
             pass
         return res.text, res.status_code
+
+    def clear_cache(self, path):
+        path = path.lstrip("/")
+        fpath = f"public/api/{path}.json"
+        if os.path.isfile(fpath):
+            print(f"rm cached {path}")
+            os.remove(fpath)
 
     def fetch_json(self, path:str, method="GET", data=None):
         txt, code = self.fetch(path, method, data)
