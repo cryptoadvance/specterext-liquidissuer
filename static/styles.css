@@ -23,13 +23,16 @@ html, body, #app{
     /* for buttons and stuff */
     --cmap-default:       #506072;
     --cmap-default-darker:#394659;
+    --cmap-default-darkest:#323E50;
     --cmap-blue:          #4A8FE2;
     --cmap-blue-darker:   #3575C0;
     --cmap-red:           #A12737;
     --cmap-red-darker:    #951E2D;
     --cmap-orange:        #DF7B00;
     --cmap-orange-darker: #C56100;
-
+    /* for relative bg */
+    --cmap-slightly-darker: rgba(0,0,0,0.1);
+    --cmap-slightly-brighter: rgba(255,255,255,0.1);
     /* text stuff */
     --cmap-text:          #fff;
     --cmap-opa:           0.7;
@@ -101,9 +104,7 @@ nav.side .submenu a.selected{
     border-left: 3px solid var(--cmap-blue);
     background: rgba(0,0,0,0.2);
 }
-nav.side .selected,
-nav.side .router-link-exact-active,
-nav.side .router-link-active{
+nav.side .selected{
     background: var(--cmap-bg-lighter);
     border-left: 3px solid var(--cmap-blue);
 }
@@ -215,6 +216,13 @@ table.labeled tr td:first-child{
 }
 .actions.right > a:first-child{
     border-radius: var(--cmap-radius) 0 0 0;
+}
+.actions > a.selected {
+    /* background: var(--cmap-slightly-darker); */
+    background: transparent;
+}
+.actions > a.selected:hover {
+    background: var(--cmap-default-darkest);
 }
 main{
     flex-grow: 1;
@@ -342,6 +350,12 @@ img.tiny,
     vertical-align: text-bottom;
     margin-bottom: 0px;
 }
+tr td.onhover{
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
 tr td.onhover > * {
     visibility: hidden;
 }
@@ -350,6 +364,12 @@ tr:hover td.onhover > * {
 }
 
 /* FORM ELEMENTS */
+.table form.controls{
+    /* display: flex; */
+    /* flex-direction: row; */
+    margin: 0;
+    padding: 0;
+}
 input, textarea, .input, select {
     border: 1px solid var(--cmap-bg-lightest);
     background: var(--cmap-bg);

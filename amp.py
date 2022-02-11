@@ -30,6 +30,22 @@ class Asset(dict):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
 
+    def change_assignment(self, assid, action="LOCK"):
+        print(action, assid)
+        if action == "DELETE":
+            try:
+                self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/delete", method="DELETE")
+            except Exception as e:
+                print(e) # bug in amp API - returns error
+        elif action == "LOCK":
+            self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/lock", method="PUT")
+        elif action == "UNLOCK":
+            self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/unlock", method="PUT")
+        else:
+            raise RuntimeError("Unknown action")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
+        self._assignments = None
+
     @property
     def users(self):
         return {
@@ -52,7 +68,7 @@ class Asset(dict):
 
     @property
     def pending_assignments(self):
-        return [ass for ass in self.assignments if not ass['is_distributed']]
+        return sorted([ass for ass in self.assignments if not ass['is_distributed']], key=lambda ass: -ass['id'])
 
     @property
     def distributions(self):
@@ -62,7 +78,7 @@ class Asset(dict):
 
     @property
     def unconfirmed_distributions(self):
-        return [dist for dist in self.distributions if dist['distribution_status'] == 'UNCONFIRMED']
+        return sorted([dist for dist in self.distributions if dist['distribution_status'] == 'UNCONFIRMED'], key=lambda dist: dist['id'])
 
     @property
     def lost_outputs(self):

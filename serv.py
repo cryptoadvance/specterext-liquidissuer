@@ -32,33 +32,33 @@ def asset(asset_uuid):
 @app.route("/assets/<asset_uuid>/assignments/")
 def asset_assignments(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/distributions/")
 def asset_distributions(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/activities/")
 def asset_activities(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/utxos/")
 def asset_utxos(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/users/")
 def asset_users(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
 def new_assignment(asset_uuid):
     asset = amp.assets[asset_uuid]
     if request.method == "GET":
-        return render_template('new_assignment.jinja', amp=amp, asset=asset)
+        return render_template('asset/new_assignment.jinja', amp=amp, asset=asset)
     # if POST request
     ass = []
     for uid in asset.users:
@@ -71,7 +71,7 @@ def new_assignment(asset_uuid):
                 raise ValueError()
         except:
             flash(f"Invalid amount: {amount}", "error")
-            return render_template('new_assignment.jinja', amp=amp, asset=asset)
+            return render_template('asset/new_assignment.jinja', amp=amp, asset=asset)
         if amount == 0:
             continue
         ass.append({
@@ -87,10 +87,29 @@ def new_assignment(asset_uuid):
         flash(str(e), "error")
     return redirect(url_for('asset', asset_uuid=asset_uuid))
 
+@app.route("/assets/<asset_uuid>/assignment/<int:assid>/", methods=["POST"])
+def change_assignment(asset_uuid, assid):
+    asset = amp.assets[asset_uuid]
+    try:
+        action = request.form.get("action", "lock")
+        if action == "delete":
+            asset.change_assignment(assid, "DELETE")
+            flash("Assignment deleted")
+        elif action == "unlock":
+            asset.change_assignment(assid, "UNLOCK")
+            flash("Assignment unlocked")
+        else:
+            asset.change_assignment(assid, "LOCK")
+            flash("Assignment locked")
+    except Exception as e:
+        flash(f"{e}", "error")
+    return redirect(url_for('asset', asset_uuid=asset_uuid))
+
+
 @app.route("/assets/<asset_uuid>/new_distribution/")
 def new_distribution(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('base.jinja', amp=amp, asset=asset)
+    return render_template('asset/base.jinja', amp=amp, asset=asset)
 
 
 

@@ -1,9 +1,6 @@
-{% extends "base.jinja" %}
-{% block main %}
-<main>
-    {% include "includes/asset_summary.jinja" %}
-
-    <form action="./" method="POST">
+{% extends "asset/base.jinja" %}
+{% block assetmain %}
+<form action="./" method="POST">
     <div class="inner">
         <h1>Create new assignments</h1>
         <small>Enter amounts in the table below. Keep 0 if you don't want to assign to this user.</small>
@@ -54,5 +51,5 @@
     </table>
 
     <center><button type="submit"><img src="{{ url_for('static', filename='img/add.svg') }}"/> Create assignment</button></center>
-    </form>
+</form>
 {% endblock %}
