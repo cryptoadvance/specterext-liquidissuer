@@ -46,6 +46,17 @@ class Asset(dict):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
 
+    def create_distribution(self):
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/create/")
+        fpath = f"data/assets/{self.asset_uuid}/distributions/{res['distribution_uuid']}.json"
+        try:
+            os.makedirs(os.path.dirname(fpath))
+        except:
+            pass
+        with open(fpath, "w") as f:
+            f.write(json.dumps(res))
+        return res
+
     @property
     def users(self):
         return {

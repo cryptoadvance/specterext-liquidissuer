@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 from flask import Flask, flash, redirect, render_template, request, url_for
 from amp import Amp
 
@@ -11,7 +10,7 @@ amp = Amp(API_URL, AUTH)
 
 @app.route("/")
 def index():
-    return render_template('dashboard.jinja', amp=amp)
+    return redirect(url_for('assets'))
 
 
 
@@ -109,7 +108,9 @@ def change_assignment(asset_uuid, assid):
 @app.route("/assets/<asset_uuid>/new_distribution/")
 def new_distribution(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('asset/base.jinja', amp=amp, asset=asset)
+    res = asset.create_distribution()
+    print(res)
+    return redirect(url_for('asset', asset_uuid=asset_uuid))
 
 
 
