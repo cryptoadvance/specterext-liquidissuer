@@ -45,10 +45,7 @@ class Asset(dict):
 
     def change_assignment(self, assid, action="lock"):
         if action == "delete":
-            try:
-                self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/delete", method="DELETE")
-            except Exception as e:
-                logger.error(f"Known error: {e}") # bug in amp API - returns error
+            self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/delete", method="DELETE")
         elif action == "lock":
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/lock", method="PUT")
         elif action == "unlock":
@@ -122,10 +119,7 @@ class Asset(dict):
         self._assignments = None
         if action == "cancel":
             raise NotImplementedError("Blockstream API can't cancel distribution even though it should.")
-            try:
-                self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{distribution_uuid}/cancel", method="DELETE")
-            except Exception as e:
-                logger.error(f"Known error: {e}") # bug in amp API - returns error
+            self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{distribution_uuid}/cancel", method="DELETE")
         else:
             raise RuntimeError("Unknown action")
 
@@ -311,7 +305,7 @@ class Amp:
         txt, code = self.fetch(path, method, data)
         if code < 200 or code > 299:
             raise APIException(txt, code)
-        return json.loads(txt)
+        return json.loads(txt) if txt else {}
 
     def sync(self):
         self.users = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
