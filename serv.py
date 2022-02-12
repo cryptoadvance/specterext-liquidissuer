@@ -178,9 +178,19 @@ def treasury():
 
 
 
-@app.route("/settings/")
+@app.route("/settings/", methods=["GET", "POST"])
 def settings():
-    return render_template('base.jinja', amp=amp)
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "clear_cache":
+            try:
+                amp.clear_cache()
+                flash("Cache cleared")
+            except Exception as e:
+                flash(f"{e}", "error")
+        else:
+            flash("Unknown action", "error")
+    return render_template('settings.jinja', amp=amp)
 
 
 

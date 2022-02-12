@@ -6,6 +6,7 @@ import logging
 from rpc import find_rpc
 import threading
 import time
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,12 @@ class Asset(dict):
         self._distributions = None
         self._lost_outputs = None
         super().__init__(**kwargs)
+
+    def clear_cache(self):
+        self._summary = {}
+        self._assignments = None
+        self._distributions = None
+        self._lost_outputs = None
 
     def create_assignment(self, assignments):
         for ass in assignments:
@@ -285,12 +292,20 @@ class Amp:
             pass
         return res.text, res.status_code
 
-    def clear_cache(self, path):
-        path = path.lstrip("/")
-        fpath = f"public/api/{path}.json"
-        if os.path.isfile(fpath):
-            logger.debug(f"removed cached {path}")
-            os.remove(fpath)
+    def clear_cache(self, path=None):
+        if path is not None:
+            path = path.lstrip("/")
+            fpath = f"public/api/{path}.json"
+            if os.path.isfile(fpath):
+                logger.debug(f"removed cached {path}")
+                os.remove(fpath)
+        else:
+            try:
+                shutil.rmtree("public/api")
+            except:
+                pass
+            for ass in self.assets.values():
+                ass.clear_cache()
 
     def fetch_json(self, path:str, method="GET", data=None):
         txt, code = self.fetch(path, method, data)
