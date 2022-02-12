@@ -2,6 +2,12 @@ import os
 from typing import Tuple
 import requests
 import json
+import logging
+from rpc import find_rpc
+import threading
+import time
+
+logger = logging.getLogger(__name__)
 
 def list2dict(arr:list, idkey:str='id', cls=None, args=[]) -> dict:
     """Converts a list to dict using `idkey` field as key in the dict"""
@@ -30,16 +36,15 @@ class Asset(dict):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
 
-    def change_assignment(self, assid, action="LOCK"):
-        print(action, assid)
-        if action == "DELETE":
+    def change_assignment(self, assid, action="lock"):
+        if action == "delete":
             try:
                 self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/delete", method="DELETE")
             except Exception as e:
-                print(e) # bug in amp API - returns error
-        elif action == "LOCK":
+                logger.error(f"Known error: {e}") # bug in amp API - returns error
+        elif action == "lock":
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/lock", method="PUT")
-        elif action == "UNLOCK":
+        elif action == "unlock":
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/unlock", method="PUT")
         else:
             raise RuntimeError("Unknown action")
@@ -47,15 +52,83 @@ class Asset(dict):
         self._assignments = None
 
     def create_distribution(self):
+        # sanity check that node is running and we have balance
+        balance = self.balance()
+        if balance['trusted'] == 0:
+            raise RuntimeError("Not enough funds in the treasury wallet")
         res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/create/")
-        fpath = f"data/assets/{self.asset_uuid}/distributions/{res['distribution_uuid']}.json"
+        if 'distribution_uuid' not in res:
+            raise APIException(str(res), 500)
+        duuid = res['distribution_uuid']
+        # write data to temp file
+        fpath = f"data/assets/{self.asset_uuid}/distributions/{duuid}.json"
         try:
             os.makedirs(os.path.dirname(fpath))
         except:
             pass
         with open(fpath, "w") as f:
             f.write(json.dumps(res))
+        # no need to check assignments - we just created the distribution
+        # create transaction
+        map_address_amount = res.get('map_address_amount')
+        map_address_asset = res.get('map_address_asset')
+        txid = self.treasury.sendmany('', map_address_amount, 0, duuid, [], False, 1, 'UNSET', map_address_asset)
+        # spawn checking thread
+        self.start_confirm_distribution_thread(txid, duuid)
+        # clear cache
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/distributions")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
+        self._distributions = None
+        self._assignments = None
         return res
+
+    def confirm_distribution_thread(self, txid, duuid, wallet):
+        t0 = time.time()
+        confs = wallet.gettransaction(txid).get('confirmations', 0)
+        # 15 minutes max, continue as soon as we have 2 confirmations
+        while time.time()-t0 < 60*15 and confs < 2:
+            logger.warn(f"Waiting for {txid} to confirm. Currently {confs} confirmations")
+            time.sleep(15)
+            confs = wallet.gettransaction(txid).get('confirmations', 0)
+        if confs == 0:
+            logger.error("Transaction did not confirm. Abort.")
+            return # timeout
+        details = wallet.gettransaction(txid).get('details')
+        tx_data = {'details': details, 'txid': txid}
+        listunspent = wallet.listunspent()
+        change_data = [u for u in listunspent if u['asset'] == self.asset_id and u['txid'] == txid]
+        confirm_payload = {'tx_data': tx_data, 'change_data': change_data}
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{duuid}/confirm", method="POST", data=json.dumps(confirm_payload))
+        logger.debug(res)
+        # clear cache
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/distributions")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
+        self._distributions = None
+        self._assignments = None
+
+    def start_confirm_distribution_thread(self, txid, duuid):
+        t = threading.Thread(target=self.confirm_distribution_thread, args=(txid, duuid, self.treasury))
+        t.start()
+
+    def change_distribution(self, distribution_uuid, action):
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
+        self._assignments = None
+        if action == "cancel":
+            raise NotImplementedError("Blockstream API can't cancel distribution even though it should.")
+            try:
+                self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{distribution_uuid}/cancel", method="DELETE")
+            except Exception as e:
+                logger.error(f"Known error: {e}") # bug in amp API - returns error
+        else:
+            raise RuntimeError("Unknown action")
+
+    @property
+    def treasury(self):
+        return self.amp.rpc.wallet("")
+
+    def balance(self):
+        b = self.treasury.getbalances()
+        return { k: int(1e8*b.get("mine", {}).get(k, {}).get(self.asset_id, 0)) for k in ["trusted", "untrusted_pending"] }
 
     @property
     def users(self):
@@ -89,7 +162,26 @@ class Asset(dict):
 
     @property
     def unconfirmed_distributions(self):
-        return sorted([dist for dist in self.distributions if dist['distribution_status'] == 'UNCONFIRMED'], key=lambda dist: dist['id'])
+        pending_ass = self.pending_assignments
+        untracked_uuids = {ass['distribution_uuid'] for ass in pending_ass if ass['distribution_uuid']}
+        pending = [{
+            "distribution_uuid": uuid,
+            "distribution_status": "DRAFT",
+            "transactions": [{
+                "txid": None,
+                "transaction_status": "DRAFT",
+                "assignments": [
+                    {
+                        "registered_user": ass["registered_user"],
+                        "amount": ass["amount"],
+                    }
+                    for ass in pending_ass
+                    if ass['distribution_uuid'] == uuid
+                ]
+            }]
+        } for uuid in untracked_uuids]
+        unconfirmed = list(sorted([dist for dist in self.distributions if dist['distribution_status'] == 'UNCONFIRMED'], key=lambda dist: dist['id']))
+        return pending + unconfirmed
 
     @property
     def lost_outputs(self):
@@ -154,18 +246,25 @@ class Amp:
         self.categories = {}
         self.users = {}
         self.managers = {}
+        self._rpc = None
+
+    @property
+    def rpc(self):
+        if self._rpc is None:
+            self._rpc = find_rpc("liquidtestnet", liquid=True)
+        return self._rpc
 
     @property
     def headers(self) -> dict:
         return {'content-type': 'application/json', 'Authorization': self.auth}
 
-    def fetch(self, path:str, method="GET", data=None) -> Tuple[str, int]:
+    def fetch(self, path:str, method="GET", data=None, cache=True) -> Tuple[str, int]:
         path = path.lstrip("/")
         fpath = f"public/api/{path}.json"
         # return cached version
-        if method == "GET":
+        if method == "GET" and cache:
             if os.path.isfile(fpath):
-                print(f"cached {path}")
+                logger.debug(f"cached {path}")
                 with open(fpath, "r") as f:
                     return f.read(), 200
 
@@ -173,7 +272,7 @@ class Amp:
         params = dict(headers=self.headers)
         if data:
             params["data"] = data
-        print(f"fetch {path}")
+        logger.debug(f"fetch {path}")
         res = requests.request( method, api_url, **params)
         try:
             os.makedirs(os.path.dirname(fpath))
@@ -190,7 +289,7 @@ class Amp:
         path = path.lstrip("/")
         fpath = f"public/api/{path}.json"
         if os.path.isfile(fpath):
-            print(f"rm cached {path}")
+            logger.debug(f"removed cached {path}")
             os.remove(fpath)
 
     def fetch_json(self, path:str, method="GET", data=None):

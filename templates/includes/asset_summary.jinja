@@ -19,6 +19,16 @@
                     {% endfor %}
                 </td></tr>
                 <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
+                <tr>
+                    <td>Balance:</td>
+                    <td>
+                        {% set balance = asset.balance() %}
+                        {{balance['trusted']}}
+                        {% if balance['untrusted_pending'] %}
+                        ({{balance['untrusted_pending']}} unconfirmed)
+                        {% endif %}
+                    </td>
+                </tr>
             </table>
         </div>
         <div>
