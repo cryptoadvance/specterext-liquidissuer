@@ -1,6 +1,7 @@
 from flask import Flask, flash, redirect, render_template, request, url_for
 from amp import Amp
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +111,9 @@ def change_assignment(asset_uuid, assid):
 def new_distribution(asset_uuid):
     asset = amp.assets[asset_uuid]
     try:
-        res = asset.create_distribution()
-        logger.debug(res)
+        duuid = asset.create_distribution()
+        flash("Distribution created")
+        return redirect(url_for('asset_distribution', asset_uuid=asset_uuid, duuid=duuid))
     except Exception as e:
         flash(f"{e}", "error")
     return redirect(url_for('asset', asset_uuid=asset_uuid))
@@ -124,13 +126,29 @@ def change_distribution(asset_uuid, distribution_uuid):
         asset.change_distribution(distribution_uuid, action)
         if action == "cancel":
             flash("Distribution canceled")
+        elif action == "confirm":
+            flash("Distribution confirmed")
         else:
             raise RuntimeError("Not implemented")
     except Exception as e:
         flash(f"{e}", "error")
     return redirect(url_for('asset', asset_uuid=asset_uuid))
 
+@app.route("/assets/<asset_uuid>/distributions/<duuid>/")
+def asset_distribution(asset_uuid, duuid):
+    asset = amp.assets[asset_uuid]
+    distr = asset.get_distribution(duuid)
+    if not distr:
+        redirect(url_for('asset', asset_uuid=asset_uuid))
+    return render_template('asset/distribution.jinja', amp=amp, asset=asset, distr=distr)
 
+@app.route("/assets/<asset_uuid>/distributions/<duuid>/status/")
+def asset_distribution_status(asset_uuid, duuid):
+    asset = amp.assets[asset_uuid]
+    distr = asset.get_distribution(duuid)
+    if not distr:
+        return json.dumps({"error": "Distribution is not found"}), 404
+    return json.dumps(distr)
 
 
 @app.route("/categories/")

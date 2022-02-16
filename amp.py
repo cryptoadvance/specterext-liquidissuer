@@ -10,6 +10,8 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
+USE_CACHE = False
+
 def list2dict(arr:list, idkey:str='id', cls=None, args=[]) -> dict:
     """Converts a list to dict using `idkey` field as key in the dict"""
     return { a[idkey]: cls(*args, **a) if cls else a for a in arr }
@@ -29,6 +31,7 @@ class Asset(dict):
         self._assignments = None
         self._distributions = None
         self._lost_outputs = None
+        self._unconfirmed_distributions = {}
         super().__init__(**kwargs)
 
     def clear_cache(self):
@@ -84,16 +87,18 @@ class Asset(dict):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._distributions = None
         self._assignments = None
-        return res
+        return duuid
 
     def confirm_distribution_thread(self, txid, duuid, wallet):
         t0 = time.time()
         confs = wallet.gettransaction(txid).get('confirmations', 0)
         # 15 minutes max, continue as soon as we have 2 confirmations
         while time.time()-t0 < 60*15 and confs < 2:
+            self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": confs, "confirmed": False}
             logger.warn(f"Waiting for {txid} to confirm. Currently {confs} confirmations")
             time.sleep(15)
             confs = wallet.gettransaction(txid).get('confirmations', 0)
+        self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": confs, "confirmed": False}
         if confs == 0:
             logger.error("Transaction did not confirm. Abort.")
             return # timeout
@@ -103,6 +108,7 @@ class Asset(dict):
         change_data = [u for u in listunspent if u['asset'] == self.asset_id and u['txid'] == txid]
         confirm_payload = {'tx_data': tx_data, 'change_data': change_data}
         res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{duuid}/confirm", method="POST", data=json.dumps(confirm_payload))
+        self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": confs, "confirmed": True}
         logger.debug(res)
         # clear cache
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/distributions")
@@ -111,8 +117,17 @@ class Asset(dict):
         self._assignments = None
 
     def start_confirm_distribution_thread(self, txid, duuid):
+        self._unconfirmed_distributions[duuid] = {
+            "txid": txid,
+            "confirmations": 0,
+            "confirmed": False,
+        }
         t = threading.Thread(target=self.confirm_distribution_thread, args=(txid, duuid, self.treasury))
         t.start()
+
+    def confirm_distribution(self, duuid):
+        txid = self.get_distribution_tx(duuid)
+        self.confirm_distribution_thread(txid, duuid, self.treasury)
 
     def change_distribution(self, distribution_uuid, action):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
@@ -120,6 +135,8 @@ class Asset(dict):
         if action == "cancel":
             raise NotImplementedError("Blockstream API can't cancel distribution even though it should.")
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{distribution_uuid}/cancel", method="DELETE")
+        elif action == "confirm":
+            self.confirm_distribution(distribution_uuid)
         else:
             raise RuntimeError("Unknown action")
 
@@ -161,21 +178,45 @@ class Asset(dict):
             self._distributions = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions")
         return self._distributions or []
 
+    def get_distribution(self, duuid):
+        distr_arr = [d for d in self.unconfirmed_distributions if d['distribution_uuid'] == duuid]
+        distr = None
+        if distr_arr:
+            distr = distr_arr[0]
+            distr['confirmed'] = False
+            distr['confirmations'] = self._unconfirmed_distributions.get(duuid, {}).get("confirmations")
+        else:
+            distr_arr = [d for d in self.distributions if d['distribution_uuid'] == duuid]
+            if distr_arr:
+                distr = distr_arr[0]
+                distr['confirmed'] = True
+        return distr
+
+    def get_distribution_tx(self, duuid):
+        txid = self._unconfirmed_distributions.get(duuid, {}).get("txid")
+        if txid is not None:
+            return txid
+        txlist = self.treasury.listtransactions()
+        for tx in txlist:
+            if tx.get('comment') == duuid:
+                txid = tx.get('txid')
+                self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": tx.get('confirmations', 0), "confirmed": False}
+                self.start_confirm_distribution_thread(txid, duuid)
+                return txid
+        return txid
+
     @property
     def unconfirmed_distributions(self):
         pending_ass = self.pending_assignments
         untracked_uuids = {ass['distribution_uuid'] for ass in pending_ass if ass['distribution_uuid']}
         pending = [{
             "distribution_uuid": uuid,
-            "distribution_status": "DRAFT",
+            "distribution_status": "UNCONFIRMED",
             "transactions": [{
-                "txid": None,
-                "transaction_status": "DRAFT",
+                "txid": self.get_distribution_tx(uuid),
+                "transaction_status": "UNCONFIRMED",
                 "assignments": [
-                    {
-                        "registered_user": ass["registered_user"],
-                        "amount": ass["amount"],
-                    }
+                    ass
                     for ass in pending_ass
                     if ass['distribution_uuid'] == uuid
                 ]
@@ -259,7 +300,7 @@ class Amp:
     def headers(self) -> dict:
         return {'content-type': 'application/json', 'Authorization': self.auth}
 
-    def fetch(self, path:str, method="GET", data=None, cache=True) -> Tuple[str, int]:
+    def fetch(self, path:str, method="GET", data=None, cache=USE_CACHE) -> Tuple[str, int]:
         path = path.lstrip("/")
         fpath = f"public/api/{path}.json"
         # return cached version

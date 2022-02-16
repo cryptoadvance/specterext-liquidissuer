@@ -105,7 +105,7 @@
     {% endif %}
     {% for dist in asset.unconfirmed_distributions %}
         <tr>
-            <td>{{ dist['distribution_uuid'] }}</td>
+            <td><a href="{{url_for('asset_distribution', asset_uuid=asset.asset_uuid, duuid=dist['distribution_uuid'])}}">{{ dist['distribution_uuid'] }}</a></td>
             <td>{{ dist['distribution_status'] }}</td>
             <td>{{ dist['transactions'][0]['txid'] or "-" }}</td>
             <td>{{ dist['transactions'][0]['assignments'] | sum(attribute='amount') }}</td>

@@ -402,3 +402,13 @@ label.inline input[type="checkbox"]{
     z-index: 99999;
     margin-left: -25%;
 }
+
+/* STATUS CARD */
+.status-card{
+    background: var(--cmap-bg-lightest);
+    margin: 20px auto;
+    max-width: 600px;
+    padding: 20px;
+    border-radius: var(--cmap-radius);
+    text-align: center;
+}
