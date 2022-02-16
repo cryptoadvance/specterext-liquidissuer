@@ -392,6 +392,15 @@ class User(dict):
         self.amp = amp
         super().__init__(**kwargs)
 
+    def update_categories(self, cids):
+        new_categories = [cid for cid in cids if cid not in self['categories']]
+        removed_categories = [cid for cid in self['categories'] if cid not in cids]
+        for cid in new_categories:
+            self.amp.fetch_json(f"/categories/{cid}/registered_users/{self['id']}/add", method="PUT")
+        for cid in removed_categories:
+            self.amp.fetch_json(f"/categories/{cid}/registered_users/{self['id']}/remove", method="PUT")
+        self['categories'] = cids
+
     @property
     def categories(self):
         return {cat: self.amp.categories[cat] for cat in self['categories']}
@@ -437,6 +446,16 @@ class Amp:
         }
         res = self.fetch_json("/categories/add", method="POST", data=json.dumps(data))
         self.sync(cache=False)
+        return res['id']
+
+    def new_user(self, name, gaid, is_company=False):
+        data = {
+            "name": name,
+            "GAID": gaid,
+            "is_company": is_company,
+        }
+        res = self.fetch_json("/registered_users/add", method="POST", data=json.dumps(data))
+        self.users = list2dict(self.fetch_json("/registered_users", cache=False), cls=User, args=[self])
         return res['id']
 
     @property

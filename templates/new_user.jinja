@@ -1,0 +1,16 @@
+{% extends "base.jinja" %}
+{% block main %}
+<main>
+    <form class="new-form" action="{{url_for('new_user')}}" method="POST">
+    <h1>Create new user</h1>
+    <br>
+    <label for="user_name">User name</label>
+    <input type="text" id="user_name" name="user_name" placeholder="User name" value="{{obj.get('user_name','')}}"><br>
+    <label for="user_GAID">GAID - Green Address ID</label>
+    <input type="text" id="user_GAID" name="user_GAID" placeholder="GAID" value="{{obj.get('user_GAID','')}}"><br>
+    <label class="checkbox" for="is_company"><input type="checkbox" id="is_company" name="is_company" {{'checked' if obj.get('is_company') else ''}}> Company</label>
+    <hr>
+    <button type="submit" name="action" value="create">Create new user</button>
+    </form>
+</main>
+{% endblock %}

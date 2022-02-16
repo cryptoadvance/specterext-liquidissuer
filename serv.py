@@ -251,14 +251,41 @@ def category(cid):
 def users():
     return render_template('users.jinja', amp=amp)
 
-@app.route("/new_user/")
+@app.route("/new_user/", methods=["GET", "POST"])
 def new_user():
-    return render_template('base.jinja', amp=amp)
+    obj = {}
+    if request.method == "POST":
+        obj = {
+            "user_name": request.form.get("user_name"),
+            "user_GAID": request.form.get("user_GAID"),
+            "is_company": bool(request.form.get("is_company")),
+        }
+        try:
+            uid = amp.new_user(obj["user_name"], obj["user_GAID"], obj["is_company"])
+            flash("User created")
+            return redirect(url_for('user', uid=uid))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('new_user.jinja', amp=amp, obj=obj)
 
-@app.route("/users/<int:uid>/")
+@app.route("/users/<int:uid>/", methods=["GET", "POST"])
 def user(uid):
     user = amp.users[uid]
-    return render_template('base.jinja', amp=amp, user=user)
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "update_categories":
+                categories = []
+                for k, v in request.form.items():
+                    if k.startswith("cid_"):
+                        categories.append(int(k[4:]))
+                user.update_categories(categories)
+                flash("Categories updated")
+            else:
+                raise NotImplementedError("Unknown action")
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('user.jinja', amp=amp, user=user)
 
 
 
