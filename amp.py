@@ -32,6 +32,7 @@ class Asset(dict):
         self._distributions = None
         self._lost_outputs = None
         self._unconfirmed_distributions = {}
+        self._reissuances = {}
         super().__init__(**kwargs)
 
     def clear_cache(self):
@@ -39,6 +40,32 @@ class Asset(dict):
         self._assignments = None
         self._distributions = None
         self._lost_outputs = None
+
+    def register(self):
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register", cache=False)
+        self.clear_cache()
+        self.amp.clear_cache("/assets")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
+        self.update(res)
+
+    def authorize(self):
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register-authorized", cache=False)
+        self.clear_cache()
+        self.amp.clear_cache("/assets")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
+        self.update(res)
+
+    def change_requirements(self, cids):
+        new_reqs = [cid for cid in cids if cid not in self['requirements']]
+        removed_reqs = [cid for cid in self['requirements'] if cid not in cids]
+        for cid in removed_reqs:
+            self.amp.fetch_json(f"/categories/{cid}/assets/{self.asset_uuid}/remove", method="PUT")
+        for cid in new_reqs:
+            self.amp.fetch_json(f"/categories/{cid}/assets/{self.asset_uuid}/add", method="PUT")
+        self['requirements'] = cids
+        self.clear_cache()
+        self.amp.clear_cache("/assets")
+        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
 
     def create_assignment(self, assignments):
         for ass in assignments:
@@ -61,6 +88,7 @@ class Asset(dict):
     def create_distribution(self):
         # sanity check that node is running and we have balance
         balance = self.balance()
+        # TODO: check that LBTC balance is enough
         if balance['trusted'] == 0:
             raise RuntimeError("Not enough funds in the treasury wallet")
         res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/create/")
@@ -107,7 +135,12 @@ class Asset(dict):
         listunspent = wallet.listunspent()
         change_data = [u for u in listunspent if u['asset'] == self.asset_id and u['txid'] == txid]
         confirm_payload = {'tx_data': tx_data, 'change_data': change_data}
-        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{duuid}/confirm", method="POST", data=json.dumps(confirm_payload))
+        for _ in range(3):
+            try:
+                res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/distributions/{duuid}/confirm", method="POST", data=json.dumps(confirm_payload))
+                break
+            except:
+                time.sleep(10)
         self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": confs, "confirmed": True}
         logger.debug(res)
         # clear cache
@@ -140,6 +173,86 @@ class Asset(dict):
         else:
             raise RuntimeError("Unknown action")
 
+    def reissue(self, amount):
+        # sanity check that node is running and we have balance
+        balance = self.balance()
+        if balance['trusted'] == 0:
+            raise RuntimeError("Not enough funds in the treasury wallet")
+        # TODO: check that LBTC balance is enough
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissue-request", method="POST", data=json.dumps({"amount_to_reissue": amount}))
+        print(res)
+        reissue_amount = res['amount']
+        # create transaction
+        reissuedetails = self.treasury.reissueasset(self.asset_id, reissue_amount)
+        # spawn checking thread
+        self.start_confirm_reissue_thread(reissuedetails["txid"], reissuedetails["vin"], amount)
+        return reissuedetails["txid"]
+
+    def start_confirm_reissue_thread(self, txid, vin, amount):
+        self._reissuances[txid] = {
+            "vin": vin,
+            "amount": amount,
+            "confirmed": False,
+            "confirmations": 0,
+        }
+        t = threading.Thread(target=self.confirm_reissuance_thread, args=(txid, vin, amount, self.treasury))
+        t.start()
+
+    def confirm_reissuance_thread(self, txid, vin, amount, wallet):
+        print(txid)
+        t0 = time.time()
+        confs = wallet.gettransaction(txid).get('confirmations', 0)
+        # 15 minutes max, continue as soon as we have 2 confirmations
+        while time.time()-t0 < 60*15 and confs < 2:
+            self._reissuances[txid] = {"vin": vin, "confirmations": confs, "amount": amount, "confirmed": False}
+            print(self._reissuances[txid])
+            logger.warn(f"Waiting for {txid} to confirm. Currently {confs} confirmations")
+            time.sleep(15)
+            confs = wallet.gettransaction(txid).get('confirmations', 0)
+        self._reissuances[txid] = {"vin": vin, "confirmations": confs, "amount": amount, "confirmed": False}
+        print(self._reissuances[txid])
+        if confs == 0:
+            logger.error("Transaction did not confirm. Abort.")
+            return # timeout
+        details = wallet.gettransaction(txid).get('details')
+        issuances = wallet.listissuances()
+        listissuances = [issuance for issuance in issuances if issuance['txid'] == txid]
+
+        confirm_payload = {'details': details, 'reissuance_output': {"txid": txid, "vin": vin}, 'listissuances': listissuances}
+        for _ in range(3):
+            try:
+                res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissue-confirm", method="POST", data=json.dumps(confirm_payload))
+                break
+            except:
+                time.sleep(10)
+        self._reissuances[txid] = {"txid": txid, "confirmations": confs, "confirmed": True}
+        print(res)
+        logger.debug(res)
+        self._summary = {}
+
+    def get_reissuance(self, txid):
+        if txid not in self._reissuances:
+            return None
+        obj = {"txid": txid}
+        obj.update(self._reissuances.get(txid, {}))
+        return obj
+
+    def fix_reissuances(self):
+        issuances = self.treasury.listissuances(self.asset_id)
+        listissuances = [issuance for issuance in issuances if issuance['asset'] == self.asset_id and issuance['isreissuance']]
+        known = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissuances", cache=False)
+        known_txids = [tx["txid"] for tx in known]
+        unknown = [issuance for issuance in listissuances if issuance["txid"] not in known_txids]
+        print(unknown)
+        for tx in unknown:
+            txid = tx["txid"]
+            vin = tx["vin"]
+            details = self.treasury.gettransaction(txid).get('details')
+            listissuances = [issuance for issuance in issuances if issuance['txid'] == txid]
+            confirm_payload = {'details': details, 'reissuance_output': {"txid": txid, "vin": vin}, 'listissuances': listissuances}
+            res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissue-confirm", method="POST", data=json.dumps(confirm_payload))
+            print(res)
+
     @property
     def treasury(self):
         return self.amp.rpc.wallet("")
@@ -155,6 +268,10 @@ class Asset(dict):
             for uid,user in self.amp.users.items()
             if all([cid in user.categories for cid in self['requirements']])
         }
+
+    @property
+    def is_reissuable(self):
+        return self.summary.get('reissuance_tokens', 0) > 0
 
     @property
     def summary(self):
@@ -290,6 +407,38 @@ class Amp:
         self.managers = {}
         self._rpc = None
 
+    def new_asset(self, obj):
+        w = self.rpc.wallet()
+        addr = w.getnewaddress()
+        data = {
+            "name": obj.get("asset_name"),
+            "amount": int(obj.get("amount") or 0),
+            "destination_address": addr,
+            "domain": obj.get("domain"),
+            "ticker": obj.get("ticker"),
+            "precision": int(obj.get("precision", 0)),
+            "pubkey": obj.get("pubkey") or w.getaddressinfo(addr).get('pubkey'),
+            "is_confidential": bool(obj.get("is_confidential")),
+            "is_reissuable": (int(obj.get("reissue", 0) or 0) > 0),
+            "reissuance_amount": int(obj.get("reissue", 0) or 0),
+            "reissuance_address": w.getnewaddress(),
+            "transfer_restricted": bool(obj.get("transfer_restricted")),
+        }
+        print(data)
+        res = self.fetch_json("/assets/issue", method="POST", data=json.dumps(data))
+        aid = res['asset_uuid']
+        self.sync(cache=False)
+        return self.assets[aid]
+
+    def new_category(self, name, description=""):
+        data = {
+            "name": name,
+            "description": description,
+        }
+        res = self.fetch_json("/categories/add", method="POST", data=json.dumps(data))
+        self.sync(cache=False)
+        return res['id']
+
     @property
     def rpc(self):
         if self._rpc is None:
@@ -342,14 +491,14 @@ class Amp:
             for ass in self.assets.values():
                 ass.clear_cache()
 
-    def fetch_json(self, path:str, method="GET", data=None):
-        txt, code = self.fetch(path, method, data)
+    def fetch_json(self, path:str, method="GET", data=None, cache=USE_CACHE):
+        txt, code = self.fetch(path, method, data, cache=cache)
         if code < 200 or code > 299:
             raise APIException(txt, code)
         return json.loads(txt) if txt else {}
 
-    def sync(self):
-        self.users = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
-        self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
-        self.categories = list2dict(self.fetch_json("/categories"))
-        self.managers = list2dict(self.fetch_json("/managers"))
+    def sync(self, cache=USE_CACHE):
+        self.users = list2dict(self.fetch_json("/registered_users", cache=cache), cls=User, args=[self])
+        self.assets = list2dict(self.fetch_json("/assets", cache=cache), 'asset_uuid', cls=Asset, args=[self])
+        self.categories = list2dict(self.fetch_json("/categories", cache=cache))
+        self.managers = list2dict(self.fetch_json("/managers", cache=cache))

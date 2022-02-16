@@ -412,3 +412,30 @@ label.inline input[type="checkbox"]{
     border-radius: var(--cmap-radius);
     text-align: center;
 }
+
+/* NEW FORM */
+.new-form{
+    background: var(--cmap-bg-lightest);
+    margin: 20px auto;
+    max-width: 700px;
+    padding: 50px;
+    border-radius: var(--cmap-radius);
+}
+.new-form label{
+    font-size: 14px;
+    color: var(--cmap-text);
+    opacity: var(--cmap-opa);
+    display: block;
+    margin-top: 10px;
+    padding-left: 10px;
+}
+.new-form label input[type="checkbox"]{
+    display: inline-block;
+    width: 20px;
+    min-width: 20px !important;
+}
+.new-form label.checkbox{
+    opacity: 1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

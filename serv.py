@@ -23,14 +23,65 @@ def index():
 def assets():
     return render_template('assets.jinja', amp=amp)
 
-@app.route("/new_asset/")
+@app.route("/new_asset/", methods=["GET", "POST"])
 def new_asset():
-    return render_template('base.jinja', amp=amp)
+    obj = {}
+    if request.method == "POST":
+        w = amp.rpc.wallet()
+        addr = w.getnewaddress()
+        obj = {
+            "asset_name": request.form.get("asset_name"),
+            "amount": int(request.form.get("amount") or 0),
+            "domain": request.form.get("domain"),
+            "ticker": request.form.get("ticker"),
+            "precision": int(request.form.get("precision", 0)),
+            "pubkey": request.form.get("pubkey"),
+            "is_confidential": bool(request.form.get("is_confidential")),
+            "reissue": int(request.form.get("reissue", 0) or 0),
+            "transfer_restricted": bool(request.form.get("transfer_restricted")),
+        }
+        try:
+            asset = amp.new_asset(obj)
+            return redirect(url_for('asset_settings', asset_uuid=asset.asset_uuid))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('new_asset.jinja', amp=amp, obj=obj)
 
 @app.route("/assets/<asset_uuid>/")
 def asset(asset_uuid):
     asset = amp.assets[asset_uuid]
     return render_template('asset/dashboard.jinja', amp=amp, asset=asset)
+
+@app.route("/assets/<asset_uuid>/settings/", methods=["GET", "POST"])
+def asset_settings(asset_uuid):
+    asset = amp.assets[asset_uuid]
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "register":
+                asset.register()
+                flash('Asset registered')
+            elif action == "authorize":
+                asset.authorize()
+                flash('Asset authorized')
+            elif action == "change_requirements":
+                requirements = []
+                for k, v in request.form.items():
+                    if k.startswith("cid_"):
+                        requirements.append(int(k[4:]))
+                asset.change_requirements(requirements)
+                flash('Requirements updated')
+            elif action == "reissue":
+                txid = asset.reissue(int(request.form.get('reissue_amount', 0) or 0))
+                return redirect(url_for('asset_reissuance', asset_uuid=asset.asset_uuid, txid=txid))
+            elif action == "fix_reissuances":
+                asset.fix_reissuances()
+                flash("Reissuances are fixed")
+            else:
+                raise NotImplementedError("Unknown action")
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('asset/settings.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/assignments/")
 def asset_assignments(asset_uuid):
@@ -55,7 +106,7 @@ def asset_utxos(asset_uuid):
 @app.route("/assets/<asset_uuid>/users/")
 def asset_users(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('asset/base.jinja', amp=amp, asset=asset)
+    return render_template('asset/users.jinja', amp=amp, asset=asset)
 
 @app.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
 def new_assignment(asset_uuid):
@@ -150,14 +201,44 @@ def asset_distribution_status(asset_uuid, duuid):
         return json.dumps({"error": "Distribution is not found"}), 404
     return json.dumps(distr)
 
+@app.route("/assets/<asset_uuid>/reissuance/<txid>/")
+def asset_reissuance(asset_uuid, txid):
+    asset = amp.assets[asset_uuid]
+    reissuance = asset.get_reissuance(txid)
+    if not reissuance:
+        redirect(url_for('asset', asset_uuid=asset_uuid))
+    return render_template('asset/reissuance.jinja', amp=amp, asset=asset, reissuance=reissuance)
+
+@app.route("/assets/<asset_uuid>/reissuance/<txid>/status/")
+def asset_reissuance_status(asset_uuid, txid):
+    asset = amp.assets[asset_uuid]
+    reissuance = asset.get_reissuance(txid)
+    if not reissuance:
+        return json.dumps({"error": "Distribution is not found"}), 404
+    return json.dumps(reissuance)
+
 
 @app.route("/categories/")
 def categories():
     return render_template('categories.jinja', amp=amp)
 
-@app.route("/new_category/")
+@app.route("/new_category/", methods=["GET", "POST"])
 def new_category():
-    return render_template('base.jinja', amp=amp)
+    obj = {}
+    if request.method == "POST":
+        name = request.form.get("category_name", "")
+        description = request.form.get("category_description", "")
+        obj = {
+            "category_name": name,
+            "category_description": description,
+        }
+        try:
+            amp.new_category(name, description)
+            flash("New category created")
+            return redirect(url_for("categories"))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('new_category.jinja', amp=amp, obj=obj)
 
 @app.route("/categories/<int:cid>/")
 def category(cid):

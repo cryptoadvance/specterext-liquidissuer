@@ -1,0 +1,56 @@
+{% extends "asset/base.jinja" %}
+{% block assetmain %}
+
+<h1>Asset settings</h1>
+<form action="{{url_for('asset_settings', asset_uuid=asset.asset_uuid)}}" method="POST"><br>
+{% if asset.is_reissuable %}
+<div>
+    <label for="reissue_amount">Reissue more: </label>
+    <input type="number" id="reissue_amount" name="reissue_amount" value="0" style="width: 300px">
+    <button type="submit" name="action" value="reissue">Reissue</button>
+</div><br>
+{% endif %}
+{% if not asset['is_registered'] %}
+Asset is not registered. <button type="submit" name="action" value="register" style="width:170px">Register</button><br><br>
+{% endif %}
+{% if not asset['is_authorized'] %}
+Asset is not authorized. <button type="submit" name="action" value="authorize" style="width:170px">Authorize</button><br><br>
+{% endif %}
+<h1>Requirements</h1>
+<table class="table">
+    <thead><tr>
+        <th width="50px">&nbsp;</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Investors</th>
+        <th>Users</th>
+        <th>Assets</th>
+    </tr></thead>
+    <tbody>
+    {% if not amp.categories %}
+        <tr><td colspan=7>No categories</td></tr>
+    {% endif %}
+    {% for cid, category in amp.categories.items() %}
+        <tr>
+            <td><input type="checkbox" name="cid_{{cid}}" {{ 'checked' if cid in asset['requirements'] else '' }} style="width: 20px; min-width:20px;"/></td>
+            <td>{{ category['id'] }}</td>
+            <td>{{ category['name'] }}</td>
+            <td>{{ category['description'] }}</td>
+            <td>{{ category['investors'] | length }}</td>
+            <td>{{ category['registered_users'] | length }}</td>
+            <td>
+                {% for aid in category['assets'] %}
+                <a class="tag">{{ amp.assets[aid].ticker }}</a>
+                {% endfor %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<button type="submit" name="action" value="change_requirements">Change requirements</button>
+<br><br><br>
+<h1>Hacks</h1>
+<button type="submit" name="action" value="fix_reissuances">Fix reissuances</button>
+</form>
+{% endblock %}

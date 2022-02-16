@@ -1,0 +1,40 @@
+{% extends "asset/base.jinja" %}
+{% block assetmain %}
+    <div class="inner">
+        <h1>Users</h1>
+        <small>All user that can hodl this asset.</small>
+    </div>
+
+    <table class="table">
+        <thead><tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>GAID</th>
+            <th>Categories</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.users %}
+            <tr><td colspan=4>No users</td></tr>
+        {% endif %}
+        {% for uid, user in asset.users.items() %}
+            <tr>
+                <td>{{ user['id'] }}</td>
+                <td>
+                    {% if user['is_company'] %}
+                    <img src="{{url_for('static', filename='img/company.svg')}}"/>
+                    {% else %}
+                    <img src="{{url_for('static', filename='img/person.svg')}}"/>
+                    {% endif %}
+                    {{ user['name'] }}
+                </a></td>
+                <td>{{ user['GAID'] }}</td>
+                <td>
+                    {% for cid, cat in user.categories.items() %}
+                    <a class="tag">{{cat["name"]}}</a>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
