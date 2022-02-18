@@ -2,15 +2,18 @@
 <html>
 <head>
 <title>AMP issuer</title>
+<link rel="shortcut icon" type="image/png" href="{{url_for('static', filename='img/blockstream_logo.png')}}"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='custom_select.css') }}">
+<script type="text/javascript" src="{{url_for('static', filename='helpers.js')}}"></script>
 {% block head %}
 {% endblock %}
 </head>
 
 <body>
+<div class="pageloader" id="pageloader"></div>
 {% include "includes/message-box.html" %}
 <div id="messages">
     {% with messages = get_flashed_messages(with_categories=True) %}

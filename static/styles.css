@@ -262,8 +262,14 @@ button img{
     max-width: 22px;
     /* vertical-align: text-bottom; */
 }
+button:disabled,
+button[disabled],
+button:disabled:hover,
+button[disabled]:hover{
+    opacity: var(--cmap-opa);
+}
 .btn:hover,
-button:hover{
+button:not([disabled]):hover{
     background: var(--cmap-default);
 }
 .btn.danger,
@@ -271,7 +277,7 @@ button.danger{
     background: var(--cmap-red-darker);
 }
 .btn.danger:hover,
-button.danger:hover{
+button.danger:not([disabled]):hover{
     background: var(--cmap-red);
 }
 .btn.warning,
@@ -279,7 +285,7 @@ button.warning{
     background: var(--cmap-orange-darker);
 }
 .btn.warning:hover,
-button.warning:hover{
+button.warning:not([disabled]):hover{
     background: var(--cmap-orange);
 }
 
@@ -446,4 +452,25 @@ input[type="checkbox"]{
     opacity: 1;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+/* PAGE LOADER */
+.pageloader{
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 999;
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--main-color), var(--cmap-red), var(--main-color), var(--cmap-red), var(--main-color), var(--cmap-red), var(--main-color));
+    background-size: 200% 100%;
+    animation: loaderloop 2s linear infinite;
+    display: none;
+}
+@keyframes loaderloop {
+    0% {
+        background-position: 0% 50%;
+    }
+    100%{
+        background-position: 200% 50%;
+    }
 }

@@ -20,7 +20,7 @@ class APIException(Exception):
     def __init__(self, msg, code):
         self.msg = msg
         self.code = code
-    
+
     def __str__(self):
         return f"Error {self.code}: {self.msg}"
 
@@ -73,12 +73,15 @@ class Asset(dict):
         removed_reqs = [cid for cid in self['requirements'] if cid not in cids]
         for cid in removed_reqs:
             self.amp.fetch_json(f"/categories/{cid}/assets/{self.asset_uuid}/remove", method="PUT")
+            if cid in self.amp.categories:
+                if self.asset_uuid in self.amp.categories[cid]["assets"]:
+                    self.amp.categories[cid]["assets"].remove(self.asset_uuid)
         for cid in new_reqs:
             self.amp.fetch_json(f"/categories/{cid}/assets/{self.asset_uuid}/add", method="PUT")
+            if cid in self.amp.categories:
+                if self.asset_uuid not in self.amp.categories[cid]["assets"]:
+                    self.amp.categories[cid]["assets"].append(self.asset_uuid)
         self['requirements'] = cids
-        self.clear_cache()
-        self.amp.clear_cache("/assets")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
 
     def create_assignment(self, assignments):
         for ass in assignments:

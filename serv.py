@@ -78,7 +78,7 @@ def asset_settings(asset_uuid):
                 asset.fix_reissuances()
                 flash("Reissuances are fixed")
             else:
-                raise NotImplementedError("Unknown action")
+                raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
             flash(f"{e}", "error")
     return render_template('asset/settings.jinja', amp=amp, asset=asset)
@@ -304,7 +304,7 @@ def user(uid):
                 flash("User deleted")
                 return redirect(url_for('users'))
             else:
-                raise NotImplementedError("Unknown action")
+                raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
             flash(f"{e}", "error")
     return render_template('user.jinja', amp=amp, user=user)
@@ -330,13 +330,15 @@ def treasury():
 def settings():
     if request.method == "POST":
         action = request.form.get("action")
-        if action == "clear_cache":
+        if action == "clear_cachex":
             try:
                 amp.clear_cache()
                 flash("Cache cleared")
             except Exception as e:
                 flash(f"{e}", "error")
         else:
+            import time
+            time.sleep(10)
             flash("Unknown action", "error")
     return render_template('settings.jinja', amp=amp)
 
