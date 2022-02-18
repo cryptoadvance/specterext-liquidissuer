@@ -128,6 +128,11 @@ a:hover .menu-icon{
 .menu-body{
     margin: 0 10px;
 }
+.center{
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
 small,.small{
     font-size: 14px;
     color: var(--cmap-text);
@@ -254,6 +259,8 @@ nav .spacer{
 .btn img,
 button img{
     margin-right: 10px;
+    max-width: 22px;
+    vertical-align: text-bottom;
 }
 .btn:hover,
 button:hover{
@@ -385,7 +392,8 @@ label.inline{
     display: flex;
     flex-direction: row;
 }
-label.inline input[type="checkbox"]{
+label.inline input[type="checkbox"],
+input[type="checkbox"]{
     width: 20px;
     min-width: 20px;
 }

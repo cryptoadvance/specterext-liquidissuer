@@ -448,15 +448,26 @@ class Amp:
         self.sync(cache=False)
         return res['id']
 
-    def new_user(self, name, gaid, is_company=False):
+    def new_user(self, name, gaid, is_company=False, categories=[]):
         data = {
             "name": name,
             "GAID": gaid,
             "is_company": is_company,
         }
         res = self.fetch_json("/registered_users/add", method="POST", data=json.dumps(data))
+        uid = res['id']
+        for cid in categories:
+            self.fetch_json(f"/categories/{cid}/registered_users/{uid}/add", method="PUT")
         self.users = list2dict(self.fetch_json("/registered_users", cache=False), cls=User, args=[self])
         return res['id']
+
+    def delete_user(self, uid):
+        raise NotImplementedError('Deleting users is a bit buggy, will be implemented shortly')
+        user = self.users[uid]
+        user.update_categories([])
+        self.fetch_json(f"/registered_users/{uid}/delete", method="DELETE")
+        if uid in self.users:
+            self.users.pop(uid)
 
     @property
     def rpc(self):

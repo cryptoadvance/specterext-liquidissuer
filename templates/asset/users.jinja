@@ -1,8 +1,11 @@
 {% extends "asset/base.jinja" %}
 {% block assetmain %}
-    <div class="inner">
-        <h1>Users</h1>
-        <small>All user that can hodl this asset.</small>
+    <div class="row inner">
+        <div>
+            <h1>Users</h1>
+            <small>All user that can hodl this asset.</small>
+        </div>
+        <a class="btn tight-right" href="{{ url_for('new_user', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('static', filename='img/add.svg') }}"/> New user</a>
     </div>
 
     <table class="table">
@@ -18,8 +21,8 @@
         {% endif %}
         {% for uid, user in asset.users.items() %}
             <tr>
-                <td>{{ user['id'] }}</td>
-                <td>
+                <td><a href="{{url_for('user', uid=user['id'])}}">{{ user['id'] }}</a></td>
+                <td><a href="{{url_for('user', uid=user['id'])}}">
                     {% if user['is_company'] %}
                     <img src="{{url_for('static', filename='img/company.svg')}}"/>
                     {% else %}
@@ -27,7 +30,7 @@
                     {% endif %}
                     {{ user['name'] }}
                 </a></td>
-                <td>{{ user['GAID'] }}</td>
+                <td><a href="{{url_for('user', uid=user['id'])}}">{{ user['GAID'] }}</a></td>
                 <td>
                     {% for cid, cat in user.categories.items() %}
                     <a class="tag">{{cat["name"]}}</a>

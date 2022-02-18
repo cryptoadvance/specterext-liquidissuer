@@ -252,17 +252,25 @@ def users():
     return render_template('users.jinja', amp=amp)
 
 @app.route("/new_user/", methods=["GET", "POST"])
-def new_user():
-    obj = {}
+@app.route("/new_user/for/<asset_uuid>/", methods=["GET", "POST"])
+def new_user(asset_uuid=None):
+    obj = {'categories': [] if asset_uuid is None else amp.assets[asset_uuid]['requirements']}
     if request.method == "POST":
         obj = {
             "user_name": request.form.get("user_name"),
             "user_GAID": request.form.get("user_GAID"),
             "is_company": bool(request.form.get("is_company")),
         }
+        categories = []
+        for k, v in request.form.items():
+            if k.startswith("cid_"):
+                categories.append(int(k[4:]))
+        obj['categories'] = categories
         try:
-            uid = amp.new_user(obj["user_name"], obj["user_GAID"], obj["is_company"])
+            uid = amp.new_user(obj["user_name"], obj["user_GAID"], obj["is_company"], categories=categories)
             flash("User created")
+            if asset_uuid:
+                return redirect(url_for('asset_users', asset_uuid=asset_uuid))
             return redirect(url_for('user', uid=uid))
         except Exception as e:
             flash(f"{e}", "error")
@@ -281,6 +289,10 @@ def user(uid):
                         categories.append(int(k[4:]))
                 user.update_categories(categories)
                 flash("Categories updated")
+            elif action == "delete":
+                amp.delete_user(uid)
+                flash("User deleted")
+                return redirect(url_for('users'))
             else:
                 raise NotImplementedError("Unknown action")
         except Exception as e:
