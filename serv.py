@@ -98,10 +98,20 @@ def asset_activities(asset_uuid):
     asset = amp.assets[asset_uuid]
     return render_template('asset/base.jinja', amp=amp, asset=asset)
 
-@app.route("/assets/<asset_uuid>/utxos/")
+@app.route("/assets/<asset_uuid>/utxos/", methods=["GET", "POST"])
 def asset_utxos(asset_uuid):
     asset = amp.assets[asset_uuid]
-    return render_template('asset/base.jinja', amp=amp, asset=asset)
+    if request.method == "POST":
+        action = request.form.get("action")
+        txid = request.form.get("txid")
+        vout = int(request.form.get("vout"))
+        try:
+            asset.change_utxo(action, txid, vout)
+            flash(f"UTXO is {action}ed")
+        except Exception as e:
+            flash(f"{e}", "error")
+    utxos = asset.get_utxos()
+    return render_template('asset/utxos.jinja', amp=amp, asset=asset, utxos=utxos)
 
 @app.route("/assets/<asset_uuid>/users/")
 def asset_users(asset_uuid):

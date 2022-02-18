@@ -260,7 +260,7 @@ nav .spacer{
 button img{
     margin-right: 10px;
     max-width: 22px;
-    vertical-align: text-bottom;
+    /* vertical-align: text-bottom; */
 }
 .btn:hover,
 button:hover{

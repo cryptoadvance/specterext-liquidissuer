@@ -48,6 +48,19 @@ class Asset(dict):
         self.amp.clear_cache(f"/assets/{self.asset_uuid}")
         self.update(res)
 
+    def get_utxos(self):
+        return self.amp.fetch_json(f"/assets/{self.asset_uuid}/utxos")
+
+    def change_utxo(self, action, txid, vout):
+        if action not in ["lock", "unlock"]:
+            raise ValueError(f"Invalid action {action}")
+        endpoint = "blacklist" if action == "lock" else "whitelist"
+        data = [{
+            "txid": txid,
+            "vout": vout,
+        }]
+        return self.amp.fetch_json(f"/assets/{self.asset_uuid}/utxos/{endpoint}", method="POST", data=json.dumps(data))
+
     def authorize(self):
         res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register-authorized", cache=False)
         self.clear_cache()
