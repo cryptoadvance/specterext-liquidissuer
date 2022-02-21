@@ -10,6 +10,10 @@
 
 # TODO before release
 
+- set non-default addresses for issue and reissue tokens
+- test if asset has 2 confs before registering and authorizing
+- allow reissuance to external wallet
+
 - pending distributions (total doesn't match)
 - better updates (no need to clear all, sync in thread etc)
 - force update everything btn (in settings probably)
