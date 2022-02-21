@@ -497,7 +497,7 @@ class Amp:
 
     def fetch(self, path:str, method="GET", data=None, cache=USE_CACHE) -> Tuple[str, int]:
         path = path.lstrip("/")
-        fpath = f"public/api/{path}.json"
+        fpath = f"data/api/{path}.json"
         # return cached version
         if method == "GET" and cache:
             if os.path.isfile(fpath):
@@ -525,13 +525,13 @@ class Amp:
     def clear_cache(self, path=None):
         if path is not None:
             path = path.lstrip("/")
-            fpath = f"public/api/{path}.json"
+            fpath = f"data/api/{path}.json"
             if os.path.isfile(fpath):
                 logger.debug(f"removed cached {path}")
                 os.remove(fpath)
         else:
             try:
-                shutil.rmtree("public/api")
+                shutil.rmtree("data/api")
             except:
                 pass
             for ass in self.assets.values():
