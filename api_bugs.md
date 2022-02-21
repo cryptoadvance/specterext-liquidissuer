@@ -8,6 +8,17 @@
 - users
     - If the user was added to categories, then removed and deleted it can't be created again
 
+# Multisig support:
+
+- select wallets when issuing a new asset - for asset and for reissuance token
+- save pending distribution or reissuance psbt
+- sign with specter-diy over SD/QR or USB?
+- broadcast and confirm as before
+
+- DIY: detect issuance / reissuance transaction
+- Optimize for QR transfer
+- Optimize the tool for mobile?
+
 # TODO before release
 
 - set non-default addresses for issue and reissue tokens
@@ -25,7 +36,6 @@
 - custom 500 error page?
 - specter extension (binary)
 - links to distributions, assignments?, users, categories
-# Q
 
 # TODO next
 

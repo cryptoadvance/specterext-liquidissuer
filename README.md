@@ -1,24 +1,10 @@
-# hello-vue
+# Amp issuer
 
-## Project setup
-```
-npm install
-```
+## Run
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+Make sure your liquid node is running on [`liquidtestnet`](https://liquidtestnet.com/) with rpc server enabled (`elementsd`, or `elements-qt` with `server=1` in `elements.conf`), then:
 
-### Compiles and minifies for production
 ```
-npm run build
+pip3 install -r requirements.txt
+python3 serv.py
 ```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
