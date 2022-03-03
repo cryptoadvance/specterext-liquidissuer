@@ -1,0 +1,5 @@
+recursive-include src/cryptoadvance/specterext/ampissuer/templates *
+recursive-include src/cryptoadvance/specterext/ampissuer/static *
+recursive-include src/cryptoadvance/specterext/ampissuer/*/LC_MESSAGES *.mo
+recursive-include src/cryptoadvance/specterext/ampissuer/translations/*/LC_MESSAGES *.po
+include requirements.txt
