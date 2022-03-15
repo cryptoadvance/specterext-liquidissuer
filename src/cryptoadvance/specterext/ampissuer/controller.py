@@ -15,7 +15,7 @@ ampissuer_endpoint = AmpissuerService.blueprint
 
 def ext():
     ''' convenience for getting the extension-object'''
-    return app.specter.ext["ampissuer"]
+    return app.specter.service_manager.services["ampissuer"]
 
 # Those commented endpoints might make sense for deeper integration
 

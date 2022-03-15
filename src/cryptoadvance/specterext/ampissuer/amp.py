@@ -3,7 +3,7 @@ from typing import Tuple
 import requests
 import json
 import logging
-from rpc import find_rpc
+from .rpc import find_rpc
 import threading
 import time
 import shutil
