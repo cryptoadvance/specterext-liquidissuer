@@ -28,7 +28,7 @@ class AmpissuerService(Service):
     # Those will end up as keys in a json-file
     SPECTER_WALLET_ALIAS = "wallet"
 
-    def callback(self, callback_id):
+    def callback(self, callback_id, *args, **kwargs):
         if callback_id == after_serverpy_init_app:
             try:
                 self.amp = Amp(app.config["API_URL"],app.config["AUTH"])
