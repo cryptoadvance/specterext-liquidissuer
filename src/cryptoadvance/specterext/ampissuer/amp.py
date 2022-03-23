@@ -37,6 +37,37 @@ class Asset(dict):
         self._unconfirmed_distributions = {}
         self._reissuances = {}
         super().__init__(**kwargs)
+        self.sync()
+
+    def sync_summary(self):
+        # fetch will happen on property access
+        return self.summary
+
+    def sync_assignments(self):
+        # fetch will happen on property access
+        return self.assignments
+
+    def sync_distributions(self):
+        # fetch will happen on property access
+        return self.distributions
+
+    def sync_lost_outputs(self):
+        # fetch will happen on property access
+        return self.lost_outputs
+
+    def sync(self):
+        # run every request in a thread to speed up initial fetch
+        sync_fns = [
+            self.sync_summary,
+            self.sync_assignments,
+            self.sync_distributions,
+            self.sync_lost_outputs,
+        ]
+        threads = [threading.Thread(target=sync_fn) for sync_fn in sync_fns]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
     def clear_cache(self):
         self._summary = {}
@@ -45,10 +76,8 @@ class Asset(dict):
         self._lost_outputs = None
 
     def register(self):
-        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register", cache=False)
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register")
         self.clear_cache()
-        self.amp.clear_cache("/assets")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
         self.update(res)
 
     def get_utxos(self):
@@ -65,10 +94,8 @@ class Asset(dict):
         return self.amp.fetch_json(f"/assets/{self.asset_uuid}/utxos/{endpoint}", method="POST", data=json.dumps(data))
 
     def authorize(self):
-        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register-authorized", cache=False)
+        res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/register-authorized")
         self.clear_cache()
-        self.amp.clear_cache("/assets")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}")
         self.update(res)
 
     def change_requirements(self, cids):
@@ -89,7 +116,6 @@ class Asset(dict):
     def create_assignment(self, assignments):
         for ass in assignments:
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/create", method="POST", data=json.dumps({"assignments": [ass]}))
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
 
     def change_assignment(self, assid, action="lock"):
@@ -101,7 +127,6 @@ class Asset(dict):
             self.amp.fetch_json(f"/assets/{self.asset_uuid}/assignments/{assid}/unlock", method="PUT")
         else:
             raise RuntimeError("Unknown action")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
 
     def create_distribution(self):
@@ -114,14 +139,6 @@ class Asset(dict):
         if 'distribution_uuid' not in res:
             raise APIException(str(res), 500)
         duuid = res['distribution_uuid']
-        # write data to temp file
-        fpath = f"data/assets/{self.asset_uuid}/distributions/{duuid}.json"
-        try:
-            os.makedirs(os.path.dirname(fpath))
-        except:
-            pass
-        with open(fpath, "w") as f:
-            f.write(json.dumps(res))
         # no need to check assignments - we just created the distribution
         # create transaction
         map_address_amount = res.get('map_address_amount')
@@ -130,8 +147,6 @@ class Asset(dict):
         # spawn checking thread
         self.start_confirm_distribution_thread(txid, duuid)
         # clear cache
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/distributions")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._distributions = None
         self._assignments = None
         return duuid
@@ -163,8 +178,6 @@ class Asset(dict):
         self._unconfirmed_distributions[duuid] = {"txid": txid, "confirmations": confs, "confirmed": True}
         logger.debug(res)
         # clear cache
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/distributions")
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._distributions = None
         self._assignments = None
 
@@ -182,7 +195,6 @@ class Asset(dict):
         self.confirm_distribution_thread(txid, duuid, self.treasury)
 
     def change_distribution(self, distribution_uuid, action):
-        self.amp.clear_cache(f"/assets/{self.asset_uuid}/assignments")
         self._assignments = None
         if action == "cancel":
             raise NotImplementedError("Blockstream API can't cancel distribution even though it should.")
@@ -199,7 +211,6 @@ class Asset(dict):
             raise RuntimeError("Not enough funds in the treasury wallet")
         # TODO: check that LBTC balance is enough
         res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissue-request", method="POST", data=json.dumps({"amount_to_reissue": amount}))
-        print(res)
         reissue_amount = res['amount']
         # create transaction
         reissuedetails = self.treasury.reissueasset(self.asset_id, reissue_amount)
@@ -218,18 +229,15 @@ class Asset(dict):
         t.start()
 
     def confirm_reissuance_thread(self, txid, vin, amount, wallet):
-        print(txid)
         t0 = time.time()
         confs = wallet.gettransaction(txid).get('confirmations', 0)
         # 15 minutes max, continue as soon as we have 2 confirmations
         while time.time()-t0 < 60*15 and confs < 2:
             self._reissuances[txid] = {"vin": vin, "confirmations": confs, "amount": amount, "confirmed": False}
-            print(self._reissuances[txid])
             logger.warn(f"Waiting for {txid} to confirm. Currently {confs} confirmations")
             time.sleep(15)
             confs = wallet.gettransaction(txid).get('confirmations', 0)
         self._reissuances[txid] = {"vin": vin, "confirmations": confs, "amount": amount, "confirmed": False}
-        print(self._reissuances[txid])
         if confs == 0:
             logger.error("Transaction did not confirm. Abort.")
             return # timeout
@@ -245,7 +253,6 @@ class Asset(dict):
             except:
                 time.sleep(10)
         self._reissuances[txid] = {"txid": txid, "confirmations": confs, "confirmed": True}
-        print(res)
         logger.debug(res)
         self._summary = {}
 
@@ -259,10 +266,9 @@ class Asset(dict):
     def fix_reissuances(self):
         issuances = self.treasury.listissuances(self.asset_id)
         listissuances = [issuance for issuance in issuances if issuance['asset'] == self.asset_id and issuance['isreissuance']]
-        known = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissuances", cache=False)
+        known = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissuances")
         known_txids = [tx["txid"] for tx in known]
         unknown = [issuance for issuance in listissuances if issuance["txid"] not in known_txids]
-        print(unknown)
         for tx in unknown:
             txid = tx["txid"]
             vin = tx["vin"]
@@ -270,7 +276,6 @@ class Asset(dict):
             listissuances = [issuance for issuance in issuances if issuance['txid'] == txid]
             confirm_payload = {'details': details, 'reissuance_output': {"txid": txid, "vin": vin}, 'listissuances': listissuances}
             res = self.amp.fetch_json(f"/assets/{self.asset_uuid}/reissue-confirm", method="POST", data=json.dumps(confirm_payload))
-            print(res)
 
     @property
     def treasury(self):
@@ -435,6 +440,13 @@ class Amp:
         self.managers = {}
         self.healthy = False
         self._rpc = rpc
+        self._session = None
+
+    @property
+    def session(self):
+        if self._session is None:
+            self._session = requests.Session()
+        return self._session
 
     def new_asset(self, obj):
         w = self.rpc.wallet()
@@ -453,10 +465,9 @@ class Amp:
             "reissuance_address": w.getnewaddress(),
             "transfer_restricted": bool(obj.get("transfer_restricted")),
         }
-        print(data)
         res = self.fetch_json("/assets/issue", method="POST", data=json.dumps(data))
         aid = res['asset_uuid']
-        self.sync(cache=False)
+        self.sync()
         return self.assets[aid]
 
     def new_category(self, name, description=""):
@@ -465,7 +476,7 @@ class Amp:
             "description": description,
         }
         res = self.fetch_json("/categories/add", method="POST", data=json.dumps(data))
-        self.sync(cache=False)
+        self.sync()
         return res['id']
 
     def new_user(self, name, gaid, is_company=False, categories=[]):
@@ -478,7 +489,7 @@ class Amp:
         uid = res['id']
         for cid in categories:
             self.fetch_json(f"/categories/{cid}/registered_users/{uid}/add", method="PUT")
-        self.users = list2dict(self.fetch_json("/registered_users", cache=False), cls=User, args=[self])
+        self.users = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
         return res['id']
 
     def delete_user(self, uid):
@@ -521,50 +532,18 @@ class Amp:
     def headers(self) -> dict:
         return {'content-type': 'application/json', 'Authorization': self.auth}
 
-    def fetch(self, path:str, method="GET", data=None, cache=USE_CACHE) -> Tuple[str, int]:
+    def fetch(self, path:str, method="GET", data=None) -> Tuple[str, int]:
         path = path.lstrip("/")
-        fpath = f"data/api/{path}.json"
-        # return cached version
-        if method == "GET" and cache:
-            if os.path.isfile(fpath):
-                logger.debug(f"cached {path}")
-                with open(fpath, "r") as f:
-                    return f.read(), 200
-
         api_url = f"{self.api}{path}"
         params = dict(headers=self.headers)
         if data:
             params["data"] = data
         logger.debug(f"fetch {path}")
-        res = requests.request( method, api_url, **params)
-        try:
-            os.makedirs(os.path.dirname(fpath))
-        except:
-            pass
-        try:
-            with open(fpath, "w") as f:
-                f.write(res.text)
-        except:
-            pass
+        res = self.session.request( method, api_url, **params)
         return res.text, res.status_code
 
-    def clear_cache(self, path=None):
-        if path is not None:
-            path = path.lstrip("/")
-            fpath = f"data/api/{path}.json"
-            if os.path.isfile(fpath):
-                logger.debug(f"removed cached {path}")
-                os.remove(fpath)
-        else:
-            try:
-                shutil.rmtree("data/api")
-            except:
-                pass
-            for ass in self.assets.values():
-                ass.clear_cache()
-
-    def fetch_json(self, path:str, method="GET", data=None, cache=USE_CACHE):
-        txt, code = self.fetch(path, method, data, cache=cache)
+    def fetch_json(self, path:str, method="GET", data=None):
+        txt, code = self.fetch(path, method, data)
         if code < 200 or code > 299:
             self.healthy = False
             self._error_message = f"http-code: {code} - {txt}"
@@ -572,12 +551,29 @@ class Amp:
         self.healthy = True
         return json.loads(txt) if txt else {}
 
-    def sync(self, cache=USE_CACHE):
-        try:
-            self.users = list2dict(self.fetch_json("/registered_users", cache=cache), cls=User, args=[self])
-            self.assets = list2dict(self.fetch_json("/assets", cache=cache), 'asset_uuid', cls=Asset, args=[self])
-            self.categories = list2dict(self.fetch_json("/categories", cache=cache))
-            self.managers = list2dict(self.fetch_json("/managers", cache=cache))
-            return True
-        except APIException as e:
-            return False
+    def sync_assets(self):
+        self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
+
+    def sync_users(self):
+        self.users  = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
+
+    def sync_categories(self):
+        self.categories = list2dict(self.fetch_json("/categories"))
+
+    def sync_managers(self):
+        self.managers = list2dict(self.fetch_json("/managers"))
+
+    def sync(self):
+        # run every request in a thread to speed up initial fetch
+        sync_fns = [
+            self.sync_assets,
+            self.sync_users,
+            self.sync_categories,
+            self.sync_managers,
+        ]
+        threads = [threading.Thread(target=sync_fn) for sync_fn in sync_fns]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.healthy = True

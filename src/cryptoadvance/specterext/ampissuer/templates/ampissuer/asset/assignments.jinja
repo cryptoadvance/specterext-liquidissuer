@@ -40,6 +40,7 @@
                 </td>
                 <td class="onhover" width="300px" style="text-align: right">
                     <form class="controls" action="{{url_for('ampissuer_endpoint.change_assignment', asset_uuid=asset.asset_uuid, assid=ass['id'])}}" method="POST">
+                    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
                     {% if ass['ready_for_distribution'] %}
                     <button type="submit" name="action" value="lock"><img class="tiny" src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/lock.svg') }}"/> Lock</button>
                     {% else %}

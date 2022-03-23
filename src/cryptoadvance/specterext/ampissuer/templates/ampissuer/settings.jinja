@@ -56,6 +56,7 @@
         </div>
         <form action="{{url_for('ampissuer_endpoint.settings_post')}}" method="POST">
             <div class="row">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" name="action" value="clear_cache" class="btn">Clear cache</button>
             </div>
         </form>

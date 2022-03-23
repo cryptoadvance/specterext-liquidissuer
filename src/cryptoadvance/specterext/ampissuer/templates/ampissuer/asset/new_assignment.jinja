@@ -1,6 +1,7 @@
 {% extends "ampissuer/asset/base.jinja" %}
 {% block assetmain %}
 <form action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="inner">
         <h1>Create new assignments</h1>
         <small>Enter amounts in the table below. Keep 0 if you don't want to assign to this user.</small>
