@@ -85,7 +85,7 @@ class AmpissuerService(Service):
 
     def get_amp_mainnet_creds(self) -> str:
         service_data = self.get_current_user_service_data()
-        return service_data.get(self.AMP_MAINNET_CREDS)
+        return service_data.get(self.AMP_MAINNET_CREDS, "")
 
     def set_amp_mainnet_creds(self, creds):
         self.update_current_user_service_data({self.AMP_MAINNET_CREDS: creds})
