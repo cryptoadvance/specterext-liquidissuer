@@ -541,7 +541,6 @@ class Amp:
         if value == self._auth:
             return
         self._auth = value
-        self.clear_cache()
         self.healthy = False
         self.sync()
 
@@ -618,6 +617,7 @@ class Amp:
             t.join()
         if self._thread_exceptions:
             exc = self._thread_exceptions[0]
+            logger.error(f"Errors in threads, e.g. {exc}")
             self._error_message = str(exc)
             self._thread_exceptions = []
             self.healthy = False

@@ -55,8 +55,6 @@ class AmpissuerService(Service):
                 amp_creds = self.get_amp_testnet_creds()
             elif network == "liquidv1":
                 amp_creds = self.get_amp_mainnet_creds()
-            if amp_creds == None:
-                raise APIException("Amp credentials not configured")
             if not isinstance(bitcoin_rpc, BitcoinRPC):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
             self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc)

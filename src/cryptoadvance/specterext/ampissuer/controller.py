@@ -24,7 +24,10 @@ def ext() -> AmpissuerService:
 @ampissuer_endpoint.route("/")
 @login_required
 def index():
-    return redirect(url_for('ampissuer_endpoint.settings_get'))
+    if ext().amp.healthy:
+        return redirect(url_for('ampissuer_endpoint.assets'))
+    else:
+        return redirect(url_for('ampissuer_endpoint.settings_get'))
 
 @ampissuer_endpoint.route("/assets/")
 @login_required
