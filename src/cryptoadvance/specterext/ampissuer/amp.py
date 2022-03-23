@@ -37,6 +37,37 @@ class Asset(dict):
         self._unconfirmed_distributions = {}
         self._reissuances = {}
         super().__init__(**kwargs)
+        self.sync()
+
+    def sync_summary(self):
+        # fetch will happen on property access
+        return self.summary
+
+    def sync_assignments(self):
+        # fetch will happen on property access
+        return self.assignments
+
+    def sync_distributions(self):
+        # fetch will happen on property access
+        return self.distributions
+
+    def sync_lost_outputs(self):
+        # fetch will happen on property access
+        return self.lost_outputs
+
+    def sync(self):
+        # run every request in a thread to speed up initial fetch
+        sync_fns = [
+            self.sync_summary,
+            self.sync_assignments,
+            self.sync_distributions,
+            self.sync_lost_outputs,
+        ]
+        threads = [threading.Thread(target=sync_fn) for sync_fn in sync_fns]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
     def clear_cache(self):
         self._summary = {}
@@ -496,9 +527,29 @@ class Amp:
             raise APIException(txt, code)
         return json.loads(txt) if txt else {}
 
-    def sync(self):
+    def sync_assets(self):
         self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
-        self.users = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
+
+    def sync_users(self):
+        self.users  = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
+
+    def sync_categories(self):
         self.categories = list2dict(self.fetch_json("/categories"))
+
+    def sync_managers(self):
         self.managers = list2dict(self.fetch_json("/managers"))
+
+    def sync(self):
+        # run every request in a thread to speed up initial fetch
+        sync_fns = [
+            self.sync_assets,
+            self.sync_users,
+            self.sync_categories,
+            self.sync_managers,
+        ]
+        threads = [threading.Thread(target=sync_fn) for sync_fn in sync_fns]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
         self.healthy = True
