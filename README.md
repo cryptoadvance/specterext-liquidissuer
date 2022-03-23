@@ -3,16 +3,20 @@
 ## Run
 
 Make sure your liquid node is running on [`liquidtestnet`](https://liquidtestnet.com/) with rpc server enabled (`elementsd`, or `elements-qt` with `server=1` in `elements.conf`).
-Also , you'll need am existing default-wallet on that elements-node, then:
+Also , you'll need an existing default wallet on that elements node, something like this:
+```
+elements-cli -rpcport=18891 -rpcuser=liquid -rpcpassword=liquid createwallet ""
+```
+
 
 ```
-# have the specter-desktop source checked out in parallel
-# and make sure you're on the right branch:
-cd ../specter-desktop
-git remote add k9ert https://github.com/k9ert/specter-desktop.git
-git fetch k9ert
-git checkout service_class_refactoring
-cd ../ampissuer
+cd src                # or wherever all your projects are
+git clone git@github.com:cryptoadvance/amp-issuer.git
+
+# we assume that you have cloned specter-desktop in parallel with amp-issuer
+cd ../specter-desktop # your specter-desktop is here
+git checkout master   # you need at least the master-branch
+cd ../amp-issuer       # jump back to ampissuer
 
 # Use the environment from specter-desktop
 . ../specter-desktop/.env/bin/activate
@@ -21,3 +25,5 @@ pip3 install -r requirements.txt
 # Start specter
 python3 -m cryptoadvance.specter server --config DevelopmentConfig --debug
 ```
+
+Configure your specter to have the liquid node ready.
