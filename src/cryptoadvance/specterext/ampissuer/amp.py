@@ -428,7 +428,7 @@ class User(dict):
 class Amp:
     def __init__(self, api, auth, rpc) -> None:
         self.api = api
-        self.auth = auth
+        self._auth = auth
         self.assets = {}
         self.categories = {}
         self.users = {}
@@ -490,6 +490,28 @@ class Amp:
             self.users.pop(uid)
 
     @property
+    def error_message(self) -> str:
+        if hasattr(self, "_error_message"):
+            return self._error_message
+        return None
+
+    @property
+    def auth(self) -> str:
+        if self._auth.startswith("token"):
+            return self._auth
+        else:
+            return "token "+self._auth
+
+    @auth.setter
+    def auth(self, value):
+        if value == self._auth:
+            return
+        self._auth = value
+        self.clear_cache()
+        self.healthy = False
+        self.sync()
+
+    @property
     def rpc(self) -> BitcoinRPC:
         if self._rpc is None:
             self._rpc = find_rpc("liquidtestnet", liquid=True)
@@ -545,12 +567,17 @@ class Amp:
         txt, code = self.fetch(path, method, data, cache=cache)
         if code < 200 or code > 299:
             self.healthy = False
+            self._error_message = f"http-code: {code} - {txt}"
             raise APIException(txt, code)
+        self.healthy = True
         return json.loads(txt) if txt else {}
 
     def sync(self, cache=USE_CACHE):
-        self.users = list2dict(self.fetch_json("/registered_users", cache=cache), cls=User, args=[self])
-        self.assets = list2dict(self.fetch_json("/assets", cache=cache), 'asset_uuid', cls=Asset, args=[self])
-        self.categories = list2dict(self.fetch_json("/categories", cache=cache))
-        self.managers = list2dict(self.fetch_json("/managers", cache=cache))
-        self.healthy = True
+        try:
+            self.users = list2dict(self.fetch_json("/registered_users", cache=cache), cls=User, args=[self])
+            self.assets = list2dict(self.fetch_json("/assets", cache=cache), 'asset_uuid', cls=Asset, args=[self])
+            self.categories = list2dict(self.fetch_json("/categories", cache=cache))
+            self.managers = list2dict(self.fetch_json("/managers", cache=cache))
+            return True
+        except APIException as e:
+            return False

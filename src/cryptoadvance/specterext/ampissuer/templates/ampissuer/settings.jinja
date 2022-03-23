@@ -1,8 +1,72 @@
-{% extends "ampissuer/base.jinja" %}
-{% block main %}
-<main>
-    <form action="{{url_for('ampissuer_endpoint.settings')}}" method="POST">
-        <button type="submit" name="action" value="clear_cache">Clear cache</button>
-    </form>
-</main>
+{% extends "ampissuer/components/ampissuer_tab.jinja" %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/css/styles.css') }}">
 {% endblock %}
+
+{% block sidebar %}
+{% if amp.healthy %}
+{% include "ampissuer/components/sidebar.jinja" %}
+{% endif %}
+{% endblock %}
+
+{% block title %}Settings{% endblock %}
+{% set tab = 'settings_get' %}
+{% block content %}
+
+
+    <div class="card">
+        <h1>{{ _("Configure The Amp Issuer") }}</h1>
+        <br/>
+
+        <form action="{{ url_for(service.get_blueprint_name() + '.settings_post') }}" method="POST" role="form">
+            <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="note">{{ _("Whether to show a menu item:") }}</div>
+            <select name="show_menu">
+                <option value="yes"   {% if show_menu == 'yes' %}selected{% endif %}>Yes</option>
+                <option value="no"    {% if show_menu == 'no'  %}selected{% endif %}>No</option>
+            </select>
+            <br/>
+            <br/>
+            <br/>
+
+            
+            <div class="note">
+				{{ _("You can set your testnet token for Amp here:") }}<br>
+                <input id="amp_testnet_creds" type="text" name="amp_testnet_creds" value="{{ amp_testnet_creds }}"><br><br>
+			</div>
+            <br/>
+            <div class="note">
+				{{ _("You can set your mainnet token for Amp here:") }}<br>
+                <input id="amp_mainnet_creds" type="text" name="amp_mainnet_creds" value="{{ amp_mainnet_creds }}"><br><br>
+			</div>
+            <br/>
+            <br/>
+            
+            <div class="row">
+                <button type="submit" name="action" value="save" class="btn">{{ _("Save") }}</button>
+            </div>
+
+        </form>
+        <br>
+
+        <div class="note">
+            {{ _("Clear the cache with this button") }}<br/>
+        </div>
+        <form action="{{url_for('ampissuer_endpoint.settings_post')}}" method="POST">
+            <div class="row">
+                <button type="submit" name="action" value="clear_cache" class="btn">Clear cache</button>
+            </div>
+        </form>
+    </div>
+    <br/>
+
+
+
+    <br/>
+    <br/>
+
+
+{% endblock %}
+
