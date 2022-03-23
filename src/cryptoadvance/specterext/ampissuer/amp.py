@@ -29,6 +29,7 @@ class APIException(Exception):
 
 class Asset(dict):
     def __init__(self, amp, **kwargs):
+        self._thread_exceptions = []
         self.amp = amp
         self._summary = {}
         self._assignments = None
@@ -41,21 +42,38 @@ class Asset(dict):
 
     def sync_summary(self):
         # fetch will happen on property access
-        return self.summary
+        try:
+            return self.summary
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_assignments(self):
         # fetch will happen on property access
-        return self.assignments
+        try:
+            return self.assignments
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_distributions(self):
         # fetch will happen on property access
-        return self.distributions
+        try:
+            return self.distributions
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_lost_outputs(self):
         # fetch will happen on property access
-        return self.lost_outputs
+        try:
+            return self.lost_outputs
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync(self):
+        self._thread_exceptions = []
         # run every request in a thread to speed up initial fetch
         sync_fns = [
             self.sync_summary,
@@ -68,6 +86,10 @@ class Asset(dict):
             t.start()
         for t in threads:
             t.join()
+        if self._thread_exceptions:
+            exc = self._thread_exceptions[0]
+            self._thread_exceptions = []
+            raise exc
 
     def clear_cache(self):
         self._summary = {}
@@ -432,6 +454,7 @@ class User(dict):
 
 class Amp:
     def __init__(self, api, auth, rpc) -> None:
+        self._thread_exceptions = []
         self.api = api
         self._auth = auth
         self.assets = {}
@@ -552,19 +575,36 @@ class Amp:
         return json.loads(txt) if txt else {}
 
     def sync_assets(self):
-        self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
+        try:
+            self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_users(self):
-        self.users  = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
+        try:
+            self.users  = list2dict(self.fetch_json("/registered_users"), cls=User, args=[self])
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_categories(self):
-        self.categories = list2dict(self.fetch_json("/categories"))
+        try:
+            self.categories = list2dict(self.fetch_json("/categories"))
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync_managers(self):
-        self.managers = list2dict(self.fetch_json("/managers"))
+        try:
+            self.managers = list2dict(self.fetch_json("/managers"))
+        except Exception as e:
+            self._thread_exceptions.append(e)
+            raise e
 
     def sync(self):
         # run every request in a thread to speed up initial fetch
+        self._thread_exceptions = []
         sync_fns = [
             self.sync_assets,
             self.sync_users,
@@ -576,4 +616,8 @@ class Amp:
             t.start()
         for t in threads:
             t.join()
+        if self._thread_exceptions:
+            exc = self._thread_exceptions[0]
+            self._thread_exceptions = []
+            raise exc
         self.healthy = True
