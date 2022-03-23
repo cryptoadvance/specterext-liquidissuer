@@ -64,7 +64,7 @@ class AmpissuerService(Service):
         '''
         if not self.specter.is_liquid:
             logger.error("Running on non Liquid-Server")
-            raise SpecterError("Liquid not detected")
+            raise SpecterError("Liquid node is not detected. Please configure and select Liquid node in Specter settings.")
         if self.specter.is_testnet:
             return "liquidtestnet", app.config["API_TESTNET_URL"]
         else:
