@@ -1,12 +1,15 @@
-import os
-from typing import Tuple
-import requests
 import json
 import logging
-from .rpc import find_rpc
+import os
+import shutil
 import threading
 import time
-import shutil
+from typing import Tuple
+
+import requests
+from cryptoadvance.specter.rpc import BitcoinRPC
+
+from .rpc import find_rpc
 
 logger = logging.getLogger(__name__)
 
@@ -423,14 +426,15 @@ class User(dict):
 
 
 class Amp:
-    def __init__(self, api, auth) -> None:
+    def __init__(self, api, auth, rpc) -> None:
         self.api = api
         self.auth = auth
         self.assets = {}
         self.categories = {}
         self.users = {}
         self.managers = {}
-        self._rpc = None
+        self.healthy = False
+        self._rpc = rpc
 
     def new_asset(self, obj):
         w = self.rpc.wallet()
@@ -486,7 +490,7 @@ class Amp:
             self.users.pop(uid)
 
     @property
-    def rpc(self):
+    def rpc(self) -> BitcoinRPC:
         if self._rpc is None:
             self._rpc = find_rpc("liquidtestnet", liquid=True)
         return self._rpc
@@ -540,6 +544,7 @@ class Amp:
     def fetch_json(self, path:str, method="GET", data=None, cache=USE_CACHE):
         txt, code = self.fetch(path, method, data, cache=cache)
         if code < 200 or code > 299:
+            self.healthy = False
             raise APIException(txt, code)
         return json.loads(txt) if txt else {}
 
@@ -548,3 +553,4 @@ class Amp:
         self.assets = list2dict(self.fetch_json("/assets", cache=cache), 'asset_uuid', cls=Asset, args=[self])
         self.categories = list2dict(self.fetch_json("/categories", cache=cache))
         self.managers = list2dict(self.fetch_json("/managers", cache=cache))
+        self.healthy = True

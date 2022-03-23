@@ -1,13 +1,16 @@
 import logging
-from flask import redirect, render_template, request, url_for, flash
-from flask import current_app as app
-from flask_login import login_required, current_user
 
-from cryptoadvance.specter.services.controller import user_secret_decrypted_required
+from cryptoadvance.specter.services.controller import \
+    user_secret_decrypted_required
 from cryptoadvance.specter.user import User
 from cryptoadvance.specter.wallet import Wallet
-from .service import AmpissuerService
+from cryptoadvance.specterext.ampissuer.amp import APIException
+from cryptoadvance.specterext.ampissuer.rpc import SpecterError
+from flask import current_app as app
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
+from .service import AmpissuerService
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +86,16 @@ def index():
 
 @ampissuer_endpoint.route("/assets/")
 def assets():
-    return render_template('ampissuer/assets.jinja', amp=ext().amp)
+    try:
+        return render_template('ampissuer/assets.jinja', amp=ext().amp)
+    except APIException as apie:
+        logger.error(apie)
+        flash(str(apie))
+        # ToDo: setting up API-Credentials in the settings endpoint
+        return redirect(url_for('ampissuer_endpoint.settings'))
+    except Exception as e:
+        logger.exception(e)
+        raise e
 
 @ampissuer_endpoint.route("/new_asset/", methods=["GET", "POST"])
 def new_asset():
