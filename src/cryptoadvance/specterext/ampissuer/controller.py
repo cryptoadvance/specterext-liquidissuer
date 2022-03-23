@@ -28,6 +28,7 @@ def index():
 
 @ampissuer_endpoint.route("/assets/")
 @login_required
+@user_secret_decrypted_required
 def assets():
     try:
         return render_template('ampissuer/assets.jinja', amp=ext().amp)
@@ -42,6 +43,7 @@ def assets():
 
 @ampissuer_endpoint.route("/new_asset/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def new_asset():
     obj = {}
     if request.method == "POST":
@@ -67,12 +69,14 @@ def new_asset():
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/")
 @login_required
+@user_secret_decrypted_required
 def asset(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/dashboard.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/settings/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def asset_settings(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "POST":
@@ -105,24 +109,28 @@ def asset_settings(asset_uuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/assignments/")
 @login_required
+@user_secret_decrypted_required
 def asset_assignments(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/assignments.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/")
 @login_required
+@user_secret_decrypted_required
 def asset_distributions(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/distributions.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/activities/")
 @login_required
+@user_secret_decrypted_required
 def asset_activities(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/base.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/utxos/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def asset_utxos(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "POST":
@@ -139,12 +147,14 @@ def asset_utxos(asset_uuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/users/")
 @login_required
+@user_secret_decrypted_required
 def asset_users(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/users.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def new_assignment(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "GET":
@@ -179,6 +189,7 @@ def new_assignment(asset_uuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/assignment/<int:assid>/", methods=["POST"])
 @login_required
+@user_secret_decrypted_required
 def change_assignment(asset_uuid, assid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -197,6 +208,7 @@ def change_assignment(asset_uuid, assid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/new_distribution/")
 @login_required
+@user_secret_decrypted_required
 def new_distribution(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -209,6 +221,7 @@ def new_distribution(asset_uuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distribution/<distribution_uuid>/", methods=["POST"])
 @login_required
+@user_secret_decrypted_required
 def change_distribution(asset_uuid, distribution_uuid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -226,6 +239,7 @@ def change_distribution(asset_uuid, distribution_uuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/")
 @login_required
+@user_secret_decrypted_required
 def asset_distribution(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
     distr = asset.get_distribution(duuid)
@@ -235,6 +249,7 @@ def asset_distribution(asset_uuid, duuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/status/")
 @login_required
+@user_secret_decrypted_required
 def asset_distribution_status(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
     distr = asset.get_distribution(duuid)
@@ -244,6 +259,7 @@ def asset_distribution_status(asset_uuid, duuid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/")
 @login_required
+@user_secret_decrypted_required
 def asset_reissuance(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
     reissuance = asset.get_reissuance(txid)
@@ -253,6 +269,7 @@ def asset_reissuance(asset_uuid, txid):
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/status/")
 @login_required
+@user_secret_decrypted_required
 def asset_reissuance_status(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
     reissuance = asset.get_reissuance(txid)
@@ -263,11 +280,13 @@ def asset_reissuance_status(asset_uuid, txid):
 
 @ampissuer_endpoint.route("/categories/")
 @login_required
+@user_secret_decrypted_required
 def categories():
     return render_template('ampissuer/categories.jinja', amp=ext().amp)
 
 @ampissuer_endpoint.route("/new_category/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def new_category():
     obj = {}
     if request.method == "POST":
@@ -287,12 +306,14 @@ def new_category():
 
 @ampissuer_endpoint.route("/categories/<int:cid>/")
 @login_required
+@user_secret_decrypted_required
 def category(cid):
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
 @ampissuer_endpoint.route("/users/")
 @login_required
+@user_secret_decrypted_required
 def users():
     return render_template('ampissuer/users.jinja', amp=ext().amp)
 
@@ -300,6 +321,7 @@ def users():
 @ampissuer_endpoint.route("/new_user/", methods=["GET", "POST"])
 @ampissuer_endpoint.route("/new_user/for/<asset_uuid>/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def new_user(asset_uuid=None):
     obj = {'categories': [] if asset_uuid is None else ext().amp.assets[asset_uuid]['requirements']}
     if request.method == "POST":
@@ -325,6 +347,7 @@ def new_user(asset_uuid=None):
 
 @ampissuer_endpoint.route("/users/<int:uid>/", methods=["GET", "POST"])
 @login_required
+@user_secret_decrypted_required
 def user(uid):
     user = ext().amp.users[uid]
     if request.method == "POST":
@@ -352,12 +375,14 @@ def user(uid):
 
 @ampissuer_endpoint.route("/managers/")
 @login_required
+@user_secret_decrypted_required
 def managers():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
 @ampissuer_endpoint.route("/treasury/")
 @login_required
+@user_secret_decrypted_required
 def treasury():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 

@@ -618,6 +618,8 @@ class Amp:
             t.join()
         if self._thread_exceptions:
             exc = self._thread_exceptions[0]
+            self._error_message = str(exc)
             self._thread_exceptions = []
-            raise exc
-        self.healthy = True
+            self.healthy = False
+        else:
+            self.healthy = True
