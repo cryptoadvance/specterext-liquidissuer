@@ -68,7 +68,6 @@ class AmpissuerService(Service):
         if self.specter.is_testnet:
             return "liquidtestnet", app.config["API_TESTNET_URL"]
         else:
-            return "liquidtestnet", app.config["API_TESTNET_URL"]
             return "liquidv1", app.config["API_MAINNET_URL"]
 
     @classmethod
