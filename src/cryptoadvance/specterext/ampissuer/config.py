@@ -8,6 +8,9 @@ class BaseConfig:
     API_TESTNET_URL = "https://amp-test.blockstream.com/api/"
     API_MAINNET_URL = "https://amp.blockstream.com/api/"
 
+class DevelopmentConfig(BaseConfig):
+    pass
+
 class ProductionConfig(BaseConfig):
     ''' This is a extension-based Config for Production '''
     pass

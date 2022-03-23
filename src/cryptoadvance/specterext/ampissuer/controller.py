@@ -1,14 +1,18 @@
-import logging
 import json
+import logging
+import os
 
 from cryptoadvance.specter.services.controller import \
     user_secret_decrypted_required
+from cryptoadvance.specter.services.service_encrypted_storage import \
+    ServiceEncryptedStorageError
 from cryptoadvance.specter.user import User
 from cryptoadvance.specter.wallet import Wallet
-from cryptoadvance.specterext.ampissuer.amp import APIException
+from cryptoadvance.specterext.ampissuer.amp import Amp, APIException
 from cryptoadvance.specterext.ampissuer.rpc import SpecterError
 from flask import current_app as app
 from flask import flash, redirect, render_template, request, url_for
+from flask_babel import lazy_gettext as _
 from flask_login import current_user, login_required
 
 from .service import AmpissuerService
@@ -22,11 +26,33 @@ def ext() -> AmpissuerService:
     return app.specter.service_manager.services["ampissuer"]
 
 @ampissuer_endpoint.before_request
-@user_secret_decrypted_required
 def selfcheck():
     """check status before every request"""
-    if not ext().amp.healthy:
-        flash(f"The Connection to the Amp Server is broken. {ext().amp.error_message}")
+    # This is some horrible awesome workaround which makes development easier 
+    # Instead of loading the Amp-credentials from the SecureStorage, it loads them from the 
+    # Environment variable but only in DevelopmentConfig and only if AMP_AUTH exists
+    if app.config["SPECTER_CONFIGURATION_CLASS_FULLNAME"].endswith("DevelopmentConfig") and os.environ.get("AMP_AUTH"):
+        if not ext()._amp.get("liquidtestnet"):
+            ext()._amp["liquidtestnet"] = Amp(app.config["API_TESTNET_URL"], os.environ["AMP_AUTH"], app.specter.rpc.clone())
+            ext().amp.sync()
+        if not ext().amp.healthy:
+            ext().amp.auth = app.config("AMP_AUTH")
+        return
+    if app.config["LOGIN_DISABLED"]:
+        # No logins means no password so no user_secret is possible
+        flash(
+            _(
+                "Service integration requires an authentication method that includes a password"
+            )
+        )
+        return redirect(url_for(f"settings_endpoint.auth"))
+    elif not current_user.is_user_secret_decrypted:
+        flash(_("Must login again to enable protected Services-related data"))
+        # Force re-login; automatically redirects back to calling page
+        return app.login_manager.unauthorized()
+    else:
+        if not ext().amp.healthy:
+            flash(f"The Connection to the Amp Server is broken. {ext().amp.error_message}")
 
 @ampissuer_endpoint.route("/")
 @login_required
