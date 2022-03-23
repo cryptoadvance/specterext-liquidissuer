@@ -13,6 +13,7 @@
     <p>Status: <span id="distribution_status">{{distr['distribution_status']}}</span></p>
     <p><small>TxId: {{distr['transactions'][0]['txid']}}</small></p>
     <form id="confirm_form" method="POST" style="display:none" action="{{url_for('ampissuer_endpoint.change_distribution', asset_uuid=asset.asset_uuid, distribution_uuid=distr['distribution_uuid'])}}">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
     <button type="submit" name="action" value="confirm">Confirm manually</button>
     </form>
 </div>

@@ -2,6 +2,7 @@
 {% block main %}
 <main>
     <form class="new-form" action="{{url_for('ampissuer_endpoint.new_asset')}}" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
     <h1>Issue new asset</h1>
     <br>
     <label for="ticker">Asset ticker (5 chars)</label>

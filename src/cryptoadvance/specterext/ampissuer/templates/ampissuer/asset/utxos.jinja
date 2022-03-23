@@ -39,6 +39,7 @@
             <td>{{utxo['amount']}}</td>
             <td class="onhover" width="300px" style="text-align: right">
                 <form class="controls" action="{{url_for('ampissuer_endpoint.asset_utxos', asset_uuid=asset.asset_uuid)}}" method="POST">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="txid" value="{{utxo['txid']}}"/>
                 <input type="hidden" name="vout" value="{{utxo['vout']}}"/>
                 {% if 'is_company' in user %}

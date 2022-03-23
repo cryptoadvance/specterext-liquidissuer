@@ -31,6 +31,7 @@
             <td>{{ dist['transactions'][0]['assignments'] | length }}</td>
             <td class="onhover">
                 <form class="controls" action="{{url_for('ampissuer_endpoint.change_distribution', asset_uuid=asset.asset_uuid, distribution_uuid=dist['distribution_uuid'])}}" method="POST">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
                 {% if not dist['transactions'][0]['txid'] %}
                     <button type="submit" name="action" value="cancel" class="danger" onclick="return confirm('Are you sure you want to cancel this distribution?')"><img class="tiny" src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/delete.svg') }}"/> Cancel</button>
                 {% endif %}
