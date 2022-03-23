@@ -1,4 +1,5 @@
 import logging
+import json
 
 from cryptoadvance.specter.services.controller import \
     user_secret_decrypted_required
@@ -404,9 +405,9 @@ def treasury():
 def settings():
     if request.method == "POST":
         action = request.form.get("action")
-        if action == "clear_cachex":
+        if action == "clear_cache":
             try:
-                ext().amp.clear_cache()
+                ext().amp.sync()
                 flash("Cache cleared")
             except Exception as e:
                 flash(f"{e}", "error")

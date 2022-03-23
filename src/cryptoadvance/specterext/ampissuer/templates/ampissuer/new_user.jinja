@@ -2,6 +2,7 @@
 {% block main %}
 <main>
     <form action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="new-form">
         <h1>Create new user</h1>
         <br>
