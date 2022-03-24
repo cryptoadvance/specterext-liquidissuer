@@ -524,13 +524,16 @@ class Amp:
             self.users.pop(uid)
 
     @property
-    def error_message(self) -> str:
-        if hasattr(self, "_error_message"):
-            return self._error_message
+    def api_exception(self) -> str:
+        if hasattr(self, "_api_exception"):
+            return self._api_exception
         return None
 
     @property
     def auth(self) -> str:
+        if self._auth == "" or self._auth == None:
+            self._api_exception = APIException('{"detail":"Cannot Connect to Amp without credentials, please set them"}',None)
+            raise self._api_exception
         if self._auth.startswith("token"):
             return self._auth
         else:
@@ -568,10 +571,20 @@ class Amp:
         txt, code = self.fetch(path, method, data)
         if code < 200 or code > 299:
             self.healthy = False
-            self._error_message = f"http-code: {code} - {txt}"
-            raise APIException(txt, code)
+            self._api_exception = APIException(txt, code)
+            raise self._api_exception
         self.healthy = True
         return json.loads(txt) if txt else {}
+
+    def obtain_token(self, username, password):
+        api_url = f"{self.api}user/obtain_token"
+        # can't use "fetch" as the data-structure is different
+        res = self.session.post(api_url,data={"username":username,"password":password})
+        if res.status_code != 200:
+            self._api_exception = APIException(res.text, res.status_code)
+            raise self._api_exception
+        return json.loads(res.text)["token"]
+
 
     def sync_assets(self):
         try:
@@ -618,7 +631,7 @@ class Amp:
         if self._thread_exceptions:
             exc = self._thread_exceptions[0]
             logger.error(f"Errors in threads, e.g. {exc}")
-            self._error_message = str(exc)
+            self._api_exception = exc
             self._thread_exceptions = []
             self.healthy = False
         else:
