@@ -13,10 +13,12 @@
 {% endif %}
 {% if not asset['is_registered'] %}
 Asset is not registered. <button type="submit" name="action" value="register" style="width:170px">Register</button><br>
+{% if asset.get("domain") %}
 <small>
     For registration place the following text at <code>https://{{asset['domain']}}/.well_known/liquid-asset-proof-{{asset['asset_id']}}</code>:<br>
     <code>Authorize linking the domain name {{asset['domain']}} to the Liquid asset {{asset['asset_id']}}</code>
 </small>
+{% endif %}
 <br>
 {% endif %}
 {% if not asset['is_authorized'] %}
