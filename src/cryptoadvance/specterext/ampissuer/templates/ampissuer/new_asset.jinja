@@ -13,8 +13,16 @@
     <input type="number" id="amount" name="amount" min="0" step="any" placeholder="Amount to issue" value="{{obj.get('amount','')}}"><br>
     <label for="precision">Issue precision</label>
     <input type="number" id="precision" name="precision" min="0" step="1" placeholder="Precision of the asset" value="{{obj.get('precision',0)}}"><br>
+
+    <label for="issue_address">Address to send asset to (leave empty to use default Elements wallet)</label>
+    <input type="text" id="issue_address" name="issue_address" placeholder="lq1q..." value="{{obj.get('issue_address','')}}"><br>
+
     <label for="reissue">Reissuance token</label>
     <input type="number" id="reissue" name="reissue" min="0" step="1" placeholder="Amount of reissuance tokens" value="{{obj.get('reissue',0)}}"><br>
+
+    <label for="reissue_address">Address to send reissuance token to (leave empty to use default Elements wallet)</label>
+    <input type="text" id="reissue_address" name="reissue_address" placeholder="lq1q..." value="{{obj.get('reissue_address','')}}"><br>
+
     <label for="domain">Issuer domain</label>
     <input type="text" id="domain" name="domain" placeholder="blockstream.info" value="{{obj.get('domain','')}}"><br>
     <label for="pubkey">Issuer pubkey (leave empty to assign from the treasury address)</label>
