@@ -401,34 +401,30 @@ def treasury():
 @ampissuer_endpoint.route("/settings/", methods=["GET"])
 @login_required
 def settings_get():
-    amp_testnet_creds = ext().get_amp_testnet_creds()
-    amp_mainnet_creds = ext().get_amp_mainnet_creds()
+    amp_token = ext().get_amp_token()
     return render_template('ampissuer/settings.jinja', 
         amp=ext().amp, 
-        amp_testnet_creds=amp_testnet_creds,
-        amp_mainnet_creds=amp_mainnet_creds
+        amp_token=amp_token
     )
 
 @ampissuer_endpoint.route("/settings/", methods=["POST"])
 @login_required
 def settings_post():
     action = request.form.get("action")
-    if action == "clear_cache":
-        try:
-            ext().amp.clear_cache()
-            flash("Cache cleared")
-        except Exception as e:
-            flash(f"{e}", "error")
+    if action == "obtain_token":
+        logger.info("Obtaining an Amp token")
+        token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
+        ext().set_amp_token("token " + token)
+    elif action == "delete_token":
+        logger.info("Deleting the Amp token")
+        ext().set_amp_token("")
     elif action == "save":
+        logger.info("Saving")
         user = app.specter.user_manager.get_user()
         if request.form["show_menu"] == "yes":
             user.add_service(AmpissuerService.id)
         else:
             user.remove_service(AmpissuerService.id)
-        ext().set_amp_testnet_creds(request.form["amp_testnet_creds"])
-        ext().set_amp_mainnet_creds(request.form["amp_mainnet_creds"])
-        if not ext().amp.healthy:
-            flash(ext().amp.error_message)
     else:
         import time
         time.sleep(10)

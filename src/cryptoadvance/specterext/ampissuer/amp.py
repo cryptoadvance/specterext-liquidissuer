@@ -573,6 +573,16 @@ class Amp:
         self.healthy = True
         return json.loads(txt) if txt else {}
 
+    def obtain_token(self, username, password):
+        api_url = f"{self.api}user/obtain_token"
+        # can't use "fetch" as the data-structure is different
+        res = self.session.post(api_url,data={"username":username,"password":password})
+        if res.status_code != 200:
+            self._error_message = f"http-code: {res.status_code} - {res.text}"
+            raise APIException(res.text, res.status_code)
+        return json.loads(res.text)["token"]
+
+
     def sync_assets(self):
         try:
             self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])

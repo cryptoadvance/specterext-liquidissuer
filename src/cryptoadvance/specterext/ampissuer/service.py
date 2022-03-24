@@ -51,10 +51,7 @@ class AmpissuerService(Service):
             # This exploits a bug a in the BitcoinRPC-class: clone is not overridden in 
             # the LiquidRPC and does not use type(self) in the clone-method
             bitcoin_rpc = self.specter.rpc.clone()
-            if network == "liquidtestnet":
-                amp_creds = self.get_amp_testnet_creds()
-            elif network == "liquidv1":
-                amp_creds = self.get_amp_mainnet_creds()
+            amp_creds = self.get_amp_token()
             if not isinstance(bitcoin_rpc, BitcoinRPC):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
             self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc)
@@ -74,23 +71,18 @@ class AmpissuerService(Service):
         else:
             return "liquidv1", app.config["API_MAINNET_URL"]
 
-    def get_amp_testnet_creds(self) -> str:
+    def get_amp_token(self) -> str:
+        ''' gets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
         service_data = self.get_current_user_service_data()
-        return service_data.get(self.AMP_TESTNET_CREDS, "")
+        network, _ = self.detect_liquid()
+        return service_data.get(network, "")
 
-    def set_amp_testnet_creds(self, creds):
-        self.update_current_user_service_data({self.AMP_TESTNET_CREDS: creds})
-        if self._amp.get("liquidtestnet"):
-            self._amp["liquidtestnet"].auth = creds
-
-    def get_amp_mainnet_creds(self) -> str:
-        service_data = self.get_current_user_service_data()
-        return service_data.get(self.AMP_MAINNET_CREDS, "")
-
-    def set_amp_mainnet_creds(self, creds):
-        self.update_current_user_service_data({self.AMP_MAINNET_CREDS: creds})
-        if self._amp.get("liquidv1"):
-            self._amp["liquidv1"].auth = creds
+    def set_amp_token(self, token):
+        ''' sets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
+        network, _ = self.detect_liquid()
+        self.update_current_user_service_data({network: token})
+        if self._amp.get(network):
+            self._amp[network].auth = token
 
     @classmethod
     def get_associated_wallet(cls) -> Wallet:

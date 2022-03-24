@@ -22,6 +22,7 @@
         <form action="{{ url_for(service.get_blueprint_name() + '.settings_post') }}" method="POST" role="form">
             <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
             
+            <h1>{{ _("Menu Item") }} </h1>
             <div class="note">{{ _("Whether to show a menu item:") }}</div>
             <select name="show_menu">
                 <option value="yes"   {% if show_menu == 'yes' %}selected{% endif %}>Yes</option>
@@ -31,35 +32,36 @@
             <br/>
             <br/>
 
-            
+            <h1>{{ _("Amp Authentication") }} </h1>
+            {% if amp_token %}
             <div class="note">
-				{{ _("You can set your testnet token for Amp here:") }}<br>
-                <input id="amp_testnet_creds" type="text" name="amp_testnet_creds" value="{{ amp_testnet_creds }}"><br><br>
+				{{ _("Your token has been set!") }}<br>
+                <button type="submit" name="action" value="delete_token" class="btn">{{ _("Delete Token") }}</button>
 			</div>
             <br/>
-            <div class="note">
-				{{ _("You can set your mainnet token for Amp here:") }}<br>
-                <input id="amp_mainnet_creds" type="text" name="amp_mainnet_creds" value="{{ amp_mainnet_creds }}"><br><br>
-			</div>
-            <br/>
-            <br/>
+            {% else %}
+                <div class="note">
+                {{ _("In order to use this application, you need a token which you can get by providing username/pasword here.") }}<br>
+                These credentials need to be valid for AMP {{ "production" if specter.chain == "liquidv1" else "Test" }}.
+                </div>
+                <br>
+                Username:
+                <input id="amp_username" type="text" name="amp_username" value=""><br>
+                Password:
+                <input id="amp_password" type="text" name="amp_password" value=""><br>
+                <div class="row">
+                    <button type="submit" name="action" value="obtain_token" class="btn">{{ _("Obtain Token") }}</button>
+                </div>
+                <br><br>
+
+            {% endif %}
+            <br>
             
             <div class="row">
                 <button type="submit" name="action" value="save" class="btn">{{ _("Save") }}</button>
             </div>
-
         </form>
         <br>
-
-        <div class="note">
-            {{ _("Clear the cache with this button") }}<br/>
-        </div>
-        <form action="{{url_for('ampissuer_endpoint.settings_post')}}" method="POST">
-            <div class="row">
-                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" name="action" value="clear_cache" class="btn">Clear cache</button>
-            </div>
-        </form>
     </div>
     <br/>
 
