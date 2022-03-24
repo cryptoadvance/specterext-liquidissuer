@@ -24,6 +24,9 @@ class AmpissuerService(Service):
     devstatus = devstatus_alpha
     isolated_client = False
 
+    AMP_TESTNET_CREDS = "amp_testnet_creds"
+    AMP_MAINNET_CREDS = "amp_mainnet_creds"
+
     # TODO: As more Services are integrated, we'll want more robust categorization and sorting logic
     sort_priority = 2
 
@@ -38,6 +41,9 @@ class AmpissuerService(Service):
 
     @property
     def amp(self):
+        ''' Depending on the current node chosen in specter, this is returning a fitting
+            Amp instance. It might be healthy or not. check with amp.healthy
+        '''
         network, api_url = self.detect_liquid()
         if not self._amp.get(network):
             # We need a "pure" BitcoinRPC-class, NOT a liquidRPC-class here
@@ -45,18 +51,16 @@ class AmpissuerService(Service):
             # This exploits a bug a in the BitcoinRPC-class: clone is not overridden in 
             # the LiquidRPC and does not use type(self) in the clone-method
             bitcoin_rpc = self.specter.rpc.clone()
+            if network == "liquidtestnet":
+                amp_creds = self.get_amp_testnet_creds()
+            elif network == "liquidv1":
+                amp_creds = self.get_amp_mainnet_creds()
             if not isinstance(bitcoin_rpc, BitcoinRPC):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
-            self._amp[network] = Amp(api_url, app.config["AUTH"], bitcoin_rpc)
+            self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc)
             self._amp[network].sync()
-        if self._amp[network].healthy:
-            return self._amp[network]
-        else:
-            self._amp[network].sync()
-            if self._amp[network].healthy:
-                return self._amp[network]
-        logger.error("AMP Server not properly working")
-        raise APIException("AMP Server not properly working")
+        # it might be healthy or not, we're returning it nevertheless
+        return self._amp[network]
 
     def detect_liquid(self):
         ''' returns either liquidtestnet or liquidv1 depending on the specter.rpc 
@@ -69,6 +73,24 @@ class AmpissuerService(Service):
             return "liquidtestnet", app.config["API_TESTNET_URL"]
         else:
             return "liquidv1", app.config["API_MAINNET_URL"]
+
+    def get_amp_testnet_creds(self) -> str:
+        service_data = self.get_current_user_service_data()
+        return service_data.get(self.AMP_TESTNET_CREDS, "")
+
+    def set_amp_testnet_creds(self, creds):
+        self.update_current_user_service_data({self.AMP_TESTNET_CREDS: creds})
+        if self._amp.get("liquidtestnet"):
+            self._amp["liquidtestnet"].auth = creds
+
+    def get_amp_mainnet_creds(self) -> str:
+        service_data = self.get_current_user_service_data()
+        return service_data.get(self.AMP_MAINNET_CREDS, "")
+
+    def set_amp_mainnet_creds(self, creds):
+        self.update_current_user_service_data({self.AMP_MAINNET_CREDS: creds})
+        if self._amp.get("liquidv1"):
+            self._amp["liquidv1"].auth = creds
 
     @classmethod
     def get_associated_wallet(cls) -> Wallet:

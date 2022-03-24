@@ -456,7 +456,7 @@ class Amp:
     def __init__(self, api, auth, rpc) -> None:
         self._thread_exceptions = []
         self.api = api
-        self.auth = auth
+        self._auth = auth
         self.assets = {}
         self.categories = {}
         self.users = {}
@@ -524,6 +524,27 @@ class Amp:
             self.users.pop(uid)
 
     @property
+    def error_message(self) -> str:
+        if hasattr(self, "_error_message"):
+            return self._error_message
+        return None
+
+    @property
+    def auth(self) -> str:
+        if self._auth.startswith("token"):
+            return self._auth
+        else:
+            return "token "+self._auth
+
+    @auth.setter
+    def auth(self, value):
+        if value == self._auth:
+            return
+        self._auth = value
+        self.healthy = False
+        self.sync()
+
+    @property
     def rpc(self) -> BitcoinRPC:
         if self._rpc is None:
             self._rpc = find_rpc("liquidtestnet", liquid=True)
@@ -547,7 +568,9 @@ class Amp:
         txt, code = self.fetch(path, method, data)
         if code < 200 or code > 299:
             self.healthy = False
+            self._error_message = f"http-code: {code} - {txt}"
             raise APIException(txt, code)
+        self.healthy = True
         return json.loads(txt) if txt else {}
 
     def sync_assets(self):
@@ -594,6 +617,9 @@ class Amp:
             t.join()
         if self._thread_exceptions:
             exc = self._thread_exceptions[0]
+            logger.error(f"Errors in threads, e.g. {exc}")
+            self._error_message = str(exc)
             self._thread_exceptions = []
-            raise exc
-        self.healthy = True
+            self.healthy = False
+        else:
+            self.healthy = True

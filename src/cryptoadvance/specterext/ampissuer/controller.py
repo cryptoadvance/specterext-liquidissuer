@@ -1,14 +1,18 @@
-import logging
 import json
+import logging
+import os
 
 from cryptoadvance.specter.services.controller import \
     user_secret_decrypted_required
+from cryptoadvance.specter.services.service_encrypted_storage import \
+    ServiceEncryptedStorageError
 from cryptoadvance.specter.user import User
 from cryptoadvance.specter.wallet import Wallet
-from cryptoadvance.specterext.ampissuer.amp import APIException
+from cryptoadvance.specterext.ampissuer.amp import Amp, APIException
 from cryptoadvance.specterext.ampissuer.rpc import SpecterError
 from flask import current_app as app
 from flask import flash, redirect, render_template, request, url_for
+from flask_babel import lazy_gettext as _
 from flask_login import current_user, login_required
 
 from .service import AmpissuerService
@@ -17,75 +21,49 @@ logger = logging.getLogger(__name__)
 
 ampissuer_endpoint = AmpissuerService.blueprint
 
-def ext():
+def ext() -> AmpissuerService:
     ''' convenience for getting the extension-object'''
     return app.specter.service_manager.services["ampissuer"]
 
-# Those commented endpoints might make sense for deeper integration
-
-# @ampissuer_endpoint.route("/")
-# @login_required
-# @user_secret_decrypted_required
-# def index():
-#     return render_template(
-#         "ampissuer/index.jinja",
-#     )
-
-
-# @ampissuer_endpoint.route("/transactions")
-# @login_required
-# @user_secret_decrypted_required
-# def transactions():
-#     # The wallet currently configured for ongoing autowithdrawals
-#     wallet: Wallet = AmpissuerService.get_associated_wallet()
-
-#     return render_template(
-#         "ampissuer/transactions.jinja",
-#         wallet=wallet,
-#         services=app.specter.service_manager.services,
-#     )
-
-
-# @ampissuer_endpoint.route("/settings", methods=["GET"])
-# @login_required
-# def settings_get():
-#     associated_wallet: Wallet = AmpissuerService.get_associated_wallet()
-
-#     # Get the user's Wallet objs, sorted by Wallet.name
-#     wallet_names = sorted(current_user.wallet_manager.wallets.keys())
-#     wallets = [current_user.wallet_manager.wallets[name] for name in wallet_names]
-
-#     return render_template(
-#         "ampissuer/settings.jinja",
-#         associated_wallet=associated_wallet,
-#         wallets=wallets,
-#         cookies=request.cookies,
-#     )
-
-# @ampissuer_endpoint.route("/settings", methods=["POST"])
-# @login_required
-# def settings_post():
-#     show_menu = request.form["show_menu"]
-#     user = app.specter.user_manager.get_user()
-#     if show_menu == "yes":
-#         user.add_service(AmpissuerService.id)
-#     else:
-#         user.remove_service(AmpissuerService.id)
-#     used_wallet_alias = request.form.get("used_wallet")
-#     if used_wallet_alias != None:
-#         wallet = current_user.wallet_manager.get_by_alias(used_wallet_alias)
-#         AmpissuerService.set_associated_wallet(wallet)
-#     return redirect(url_for(f"{ AmpissuerService.get_blueprint_name()}.settings_get"))
-
+@ampissuer_endpoint.before_request
+def selfcheck():
+    """check status before every request"""
+    # This is some horrible awesome workaround which makes development easier 
+    # Instead of loading the Amp-credentials from the SecureStorage, it loads them from the 
+    # Environment variable but only in DevelopmentConfig and only if AMP_AUTH exists
+    if app.config["SPECTER_CONFIGURATION_CLASS_FULLNAME"].endswith("DevelopmentConfig") and os.environ.get("AMP_AUTH"):
+        if not ext()._amp.get("liquidtestnet"):
+            ext()._amp["liquidtestnet"] = Amp(app.config["API_TESTNET_URL"], os.environ["AMP_AUTH"], app.specter.rpc.clone())
+            ext().amp.sync()
+        if not ext().amp.healthy:
+            ext().amp.auth = app.config("AMP_AUTH")
+        return
+    if app.config["LOGIN_DISABLED"]:
+        # No logins means no password so no user_secret is possible
+        flash(
+            _(
+                "Service integration requires an authentication method that includes a password"
+            )
+        )
+        return redirect(url_for(f"settings_endpoint.auth"))
+    elif not current_user.is_user_secret_decrypted:
+        flash(_("Must login again to enable protected Services-related data"))
+        # Force re-login; automatically redirects back to calling page
+        return app.login_manager.unauthorized()
+    else:
+        if not ext().amp.healthy:
+            flash(f"The Connection to the Amp Server is broken. {ext().amp.error_message}")
 
 @ampissuer_endpoint.route("/")
+@login_required
 def index():
-    return redirect(url_for('ampissuer_endpoint.assets'))
-
-
-
+    if ext().amp.healthy:
+        return redirect(url_for('ampissuer_endpoint.assets'))
+    else:
+        return redirect(url_for('ampissuer_endpoint.settings_get'))
 
 @ampissuer_endpoint.route("/assets/")
+@login_required
 def assets():
     try:
         return render_template('ampissuer/assets.jinja', amp=ext().amp)
@@ -93,12 +71,13 @@ def assets():
         logger.error(apie)
         flash(str(apie))
         # ToDo: setting up API-Credentials in the settings endpoint
-        return redirect(url_for('ampissuer_endpoint.settings'))
+        return redirect(url_for('ampissuer_endpoint.settings_get'))
     except Exception as e:
         logger.exception(e)
         raise e
 
 @ampissuer_endpoint.route("/new_asset/", methods=["GET", "POST"])
+@login_required
 def new_asset():
     obj = {}
     if request.method == "POST":
@@ -123,11 +102,13 @@ def new_asset():
     return render_template('ampissuer/new_asset.jinja', amp=ext().amp, obj=obj)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/")
+@login_required
 def asset(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/dashboard.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/settings/", methods=["GET", "POST"])
+@login_required
 def asset_settings(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "POST":
@@ -159,21 +140,25 @@ def asset_settings(asset_uuid):
     return render_template('ampissuer/asset/settings.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/assignments/")
+@login_required
 def asset_assignments(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/assignments.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/")
+@login_required
 def asset_distributions(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/distributions.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/activities/")
+@login_required
 def asset_activities(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/base.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/utxos/", methods=["GET", "POST"])
+@login_required
 def asset_utxos(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "POST":
@@ -189,11 +174,13 @@ def asset_utxos(asset_uuid):
     return render_template('ampissuer/asset/utxos.jinja', amp=ext().amp, asset=asset, utxos=utxos)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/users/")
+@login_required
 def asset_users(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     return render_template('ampissuer/asset/users.jinja', amp=ext().amp, asset=asset)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
+@login_required
 def new_assignment(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "GET":
@@ -227,6 +214,7 @@ def new_assignment(asset_uuid):
     return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/assignment/<int:assid>/", methods=["POST"])
+@login_required
 def change_assignment(asset_uuid, assid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -244,6 +232,7 @@ def change_assignment(asset_uuid, assid):
 
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/new_distribution/")
+@login_required
 def new_distribution(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -255,6 +244,7 @@ def new_distribution(asset_uuid):
     return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distribution/<distribution_uuid>/", methods=["POST"])
+@login_required
 def change_distribution(asset_uuid, distribution_uuid):
     asset = ext().amp.assets[asset_uuid]
     try:
@@ -271,6 +261,7 @@ def change_distribution(asset_uuid, distribution_uuid):
     return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/")
+@login_required
 def asset_distribution(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
     distr = asset.get_distribution(duuid)
@@ -279,6 +270,7 @@ def asset_distribution(asset_uuid, duuid):
     return render_template('ampissuer/asset/distribution.jinja', amp=ext().amp, asset=asset, distr=distr)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/status/")
+@login_required
 def asset_distribution_status(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
     distr = asset.get_distribution(duuid)
@@ -287,6 +279,7 @@ def asset_distribution_status(asset_uuid, duuid):
     return json.dumps(distr)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/")
+@login_required
 def asset_reissuance(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
     reissuance = asset.get_reissuance(txid)
@@ -295,6 +288,7 @@ def asset_reissuance(asset_uuid, txid):
     return render_template('ampissuer/asset/reissuance.jinja', amp=ext().amp, asset=asset, reissuance=reissuance)
 
 @ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/status/")
+@login_required
 def asset_reissuance_status(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
     reissuance = asset.get_reissuance(txid)
@@ -304,10 +298,12 @@ def asset_reissuance_status(asset_uuid, txid):
 
 
 @ampissuer_endpoint.route("/categories/")
+@login_required
 def categories():
     return render_template('ampissuer/categories.jinja', amp=ext().amp)
 
 @ampissuer_endpoint.route("/new_category/", methods=["GET", "POST"])
+@login_required
 def new_category():
     obj = {}
     if request.method == "POST":
@@ -326,18 +322,20 @@ def new_category():
     return render_template('ampissuer/new_category.jinja', amp=ext().amp, obj=obj)
 
 @ampissuer_endpoint.route("/categories/<int:cid>/")
+@login_required
 def category(cid):
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
-
-
 @ampissuer_endpoint.route("/users/")
+@login_required
 def users():
     return render_template('ampissuer/users.jinja', amp=ext().amp)
 
+
 @ampissuer_endpoint.route("/new_user/", methods=["GET", "POST"])
 @ampissuer_endpoint.route("/new_user/for/<asset_uuid>/", methods=["GET", "POST"])
+@login_required
 def new_user(asset_uuid=None):
     obj = {'categories': [] if asset_uuid is None else ext().amp.assets[asset_uuid]['requirements']}
     if request.method == "POST":
@@ -362,6 +360,7 @@ def new_user(asset_uuid=None):
     return render_template('ampissuer/new_user.jinja', amp=ext().amp, obj=obj)
 
 @ampissuer_endpoint.route("/users/<int:uid>/", methods=["GET", "POST"])
+@login_required
 def user(uid):
     user = ext().amp.users[uid]
     if request.method == "POST":
@@ -388,39 +387,57 @@ def user(uid):
 
 
 @ampissuer_endpoint.route("/managers/")
+@login_required
 def managers():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
-
-
 @ampissuer_endpoint.route("/treasury/")
+@login_required
 def treasury():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
+@ampissuer_endpoint.route("/settings/", methods=["GET"])
+@login_required
+def settings_get():
+    amp_testnet_creds = ext().get_amp_testnet_creds()
+    amp_mainnet_creds = ext().get_amp_mainnet_creds()
+    return render_template('ampissuer/settings.jinja', 
+        amp=ext().amp, 
+        amp_testnet_creds=amp_testnet_creds,
+        amp_mainnet_creds=amp_mainnet_creds
+    )
 
-
-@ampissuer_endpoint.route("/settings/", methods=["GET", "POST"])
-def settings():
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "clear_cache":
-            try:
-                ext().amp.sync()
-                flash("Cache cleared")
-            except Exception as e:
-                flash(f"{e}", "error")
+@ampissuer_endpoint.route("/settings/", methods=["POST"])
+@login_required
+def settings_post():
+    action = request.form.get("action")
+    if action == "clear_cache":
+        try:
+            ext().amp.clear_cache()
+            flash("Cache cleared")
+        except Exception as e:
+            flash(f"{e}", "error")
+    elif action == "save":
+        user = app.specter.user_manager.get_user()
+        if request.form["show_menu"] == "yes":
+            user.add_service(AmpissuerService.id)
         else:
-            import time
-            time.sleep(10)
-            flash("Unknown action", "error")
-    return render_template('ampissuer/settings.jinja', amp=ext().amp)
-
-
+            user.remove_service(AmpissuerService.id)
+        ext().set_amp_testnet_creds(request.form["amp_testnet_creds"])
+        ext().set_amp_mainnet_creds(request.form["amp_mainnet_creds"])
+        if not ext().amp.healthy:
+            flash(ext().amp.error_message)
+    else:
+        import time
+        time.sleep(10)
+        flash("Unknown action", "error")
+    return redirect(url_for('ampissuer_endpoint.settings_get'))
 
 
 @ampissuer_endpoint.route("/api/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
+@login_required
 def api(path):
     return ext().amp.fetch(path, request.method, request.data, cache=False)
 
