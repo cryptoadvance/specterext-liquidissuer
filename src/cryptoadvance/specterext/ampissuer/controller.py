@@ -47,12 +47,9 @@ def selfcheck():
         )
         return redirect(url_for(f"settings_endpoint.auth"))
     elif not current_user.is_user_secret_decrypted:
-        flash(_("Must login again to enable protected Services-related data"))
+        flash(_("Must login again to access encrypted Amp credentials"))
         # Force re-login; automatically redirects back to calling page
         return app.login_manager.unauthorized()
-    else:
-        if not ext().amp.healthy:
-            flash(f"The Connection to the Amp Server is broken. {ext().amp.error_message}")
 
 @ampissuer_endpoint.route("/")
 @login_required
@@ -69,7 +66,7 @@ def assets():
         return render_template('ampissuer/assets.jinja', amp=ext().amp)
     except APIException as apie:
         logger.error(apie)
-        flash(str(apie))
+        flash_apiexc(apie)
         # ToDo: setting up API-Credentials in the settings endpoint
         return redirect(url_for('ampissuer_endpoint.settings_get'))
     except Exception as e:
@@ -380,6 +377,7 @@ def user(uid):
             else:
                 raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
+            logger.exception(e)
             flash(f"{e}", "error")
     return render_template('ampissuer/user.jinja', amp=ext().amp, user=user)
 
@@ -413,8 +411,12 @@ def settings_post():
     action = request.form.get("action")
     if action == "obtain_token":
         logger.info("Obtaining an Amp token")
-        token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
-        ext().set_amp_token("token " + token)
+        try:
+            token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
+            ext().set_amp_token("token " + token)
+        except APIException as apie:
+            flash_apiexc(apie)
+        
     elif action == "delete_token":
         logger.info("Deleting the Amp token")
         ext().set_amp_token("")
@@ -436,5 +438,22 @@ def settings_post():
 @login_required
 def api(path):
     return ext().amp.fetch(path, request.method, request.data, cache=False)
+
+def flash_apiexc(e: APIException):
+    try:
+        if e == None:
+            flash("Sorry, an Error occured and i can't be more specific", "error")
+        print(f"msg: {e.msg}")
+        msg = json.loads(e.msg)
+        if msg.get("detail"):
+            flash(msg.get("detail"), "error")
+        for error in msg.get("non_field_errors",[]):
+            flash(error, "error")
+        for field in msg.keys():
+            if field != "detail" and field != "non_field_errors":
+                flash(f"{field}: {', '.join(msg[field])}", "error")
+    except Exception as le:
+        logger.exception(le)
+        flash(str(e), "error")
 
 
