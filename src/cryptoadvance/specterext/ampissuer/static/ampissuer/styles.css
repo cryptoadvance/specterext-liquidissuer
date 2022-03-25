@@ -474,3 +474,11 @@ input[type="checkbox"]{
         background-position: 200% 50%;
     }
 }
+code{
+    margin: 5px 0;
+    padding: 2px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    opacity: 1;
+}
