@@ -419,6 +419,7 @@ def settings_post():
         try:
             token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
             ext().set_amp_token("token " + token)
+            user = app.specter.user_manager.get_user()
             user.add_service(AmpissuerService.id)
         except APIException as apie:
             flash_apiexc(apie)
