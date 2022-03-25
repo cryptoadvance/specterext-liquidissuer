@@ -8,6 +8,7 @@ from typing import Tuple
 
 import requests
 from cryptoadvance.specter.rpc import BitcoinRPC
+from embit.liquid.addresses import addr_decode
 
 from .rpc import find_rpc
 
@@ -472,8 +473,23 @@ class Amp:
         return self._session
 
     def new_asset(self, obj):
+        addr = obj.get("issue_address", "")
+        reissue_addr = obj.get("reissue_address", "")
         w = self.rpc.wallet()
-        addr = w.getnewaddress()
+        pubkey = obj.get("pubkey")
+        if not addr:
+            addr = w.getnewaddress()
+        if not reissue_addr:
+            reissue_addr = w.getnewaddress()
+        if not pubkey:
+            try:
+                sc, pub = addr_decode(addr)
+            except:
+                raise RuntimeError(f"Invalid address {addr}")
+            if not pub:
+                raise RuntimeError("Address must be confidential")
+            else:
+                pubkey = str(pub)
         data = {
             "name": obj.get("asset_name"),
             "amount": int(obj.get("amount") or 0),
@@ -481,11 +497,11 @@ class Amp:
             "domain": obj.get("domain"),
             "ticker": obj.get("ticker"),
             "precision": int(obj.get("precision", 0)),
-            "pubkey": obj.get("pubkey") or w.getaddressinfo(addr).get('pubkey'),
+            "pubkey": pubkey,
             "is_confidential": bool(obj.get("is_confidential")),
             "is_reissuable": (int(obj.get("reissue", 0) or 0) > 0),
             "reissuance_amount": int(obj.get("reissue", 0) or 0),
-            "reissuance_address": w.getnewaddress(),
+            "reissuance_address": reissue_addr,
             "transfer_restricted": bool(obj.get("transfer_restricted")),
         }
         res = self.fetch_json("/assets/issue", method="POST", data=json.dumps(data))

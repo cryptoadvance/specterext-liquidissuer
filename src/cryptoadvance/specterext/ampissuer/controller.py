@@ -78,8 +78,6 @@ def assets():
 def new_asset():
     obj = {}
     if request.method == "POST":
-        w = ext().amp.rpc.wallet()
-        addr = w.getnewaddress()
         obj = {
             "asset_name": request.form.get("asset_name"),
             "amount": int(request.form.get("amount") or 0),
@@ -90,6 +88,8 @@ def new_asset():
             "is_confidential": bool(request.form.get("is_confidential")),
             "reissue": int(request.form.get("reissue", 0) or 0),
             "transfer_restricted": bool(request.form.get("transfer_restricted")),
+            "issue_address": request.form.get("issue_address", ""),
+            "reissue_address": request.form.get("reissue_address", ""),
         }
         try:
             asset = ext().amp.new_asset(obj)
