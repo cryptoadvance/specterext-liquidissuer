@@ -28,6 +28,8 @@ def ext() -> AmpissuerService:
 @ampissuer_endpoint.before_request
 def selfcheck():
     """check status before every request"""
+    if '/static/' in request.path:
+        return
     # This is some horrible awesome workaround which makes development easier 
     # Instead of loading the Amp-credentials from the SecureStorage, it loads them from the 
     # Environment variable but only in DevelopmentConfig and only if AMP_AUTH exists
@@ -46,6 +48,8 @@ def selfcheck():
             )
         )
         return redirect(url_for(f"settings_endpoint.auth"))
+    elif not current_user.is_authenticated:
+        return app.login_manager.unauthorized()
     elif not current_user.is_user_secret_decrypted:
         flash(_("Must login again to access encrypted Amp credentials"))
         # Force re-login; automatically redirects back to calling page
@@ -402,7 +406,8 @@ def settings_get():
     amp_token = ext().get_amp_token()
     return render_template('ampissuer/settings.jinja', 
         amp=ext().amp, 
-        amp_token=amp_token
+        amp_token=amp_token,
+        show_menu=AmpissuerService.id in app.specter.user_manager.get_user().services
     )
 
 @ampissuer_endpoint.route("/settings/", methods=["POST"])
@@ -414,6 +419,7 @@ def settings_post():
         try:
             token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
             ext().set_amp_token("token " + token)
+            user.add_service(AmpissuerService.id)
         except APIException as apie:
             flash_apiexc(apie)
         
