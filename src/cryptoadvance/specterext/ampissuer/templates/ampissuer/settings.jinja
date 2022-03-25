@@ -23,8 +23,8 @@
             <h1>{{ _("Menu Item") }} </h1>
             <div class="note">{{ _("Whether to show a menu item:") }}</div>
             <select name="show_menu">
-                <option value="yes"   {% if show_menu == 'yes' %}selected{% endif %}>Yes</option>
-                <option value="no"    {% if show_menu == 'no'  %}selected{% endif %}>No</option>
+                <option value="yes"   {% if show_menu %}selected{% endif %}>Yes</option>
+                <option value="no"    {% if not show_menu %}selected{% endif %}>No</option>
             </select>
             <br/>
             <br/>
