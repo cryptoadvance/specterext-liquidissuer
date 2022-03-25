@@ -78,12 +78,9 @@ class AmpissuerService(Service):
     def load_or_create_default_wallet(self,rpc):
         if '' not in rpc.listwallets():
             try:
-                rpc.loadwallet("")
+                rpc.createwallet("")
             except RpcError as rpce:
-                if rpce.error_msg.endswith("Path does not exist."):
-                    rpc.createwallet("")
-                else:
-                    raise rpce
+                rpc.loadwallet("")
 
     def get_amp_token(self) -> str:
         ''' gets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
