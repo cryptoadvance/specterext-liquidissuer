@@ -9,6 +9,8 @@ from cryptoadvance.specter.specter_error import SpecterError
 from cryptoadvance.specter.wallet import Wallet
 from flask import current_app as app
 
+from cryptoadvance.specter.rpc import RpcError
+
 from .amp import Amp, APIException
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ class AmpissuerService(Service):
 
     def callback(self, callback_id, *args, **kwargs):
         if callback_id == after_serverpy_init_app:
+            # We could do it in a constructor, maybe we should?
             self._amp = {} # self.amp will lazily fill the dictionary
             
 
@@ -51,9 +54,10 @@ class AmpissuerService(Service):
             # This exploits a bug a in the BitcoinRPC-class: clone is not overridden in 
             # the LiquidRPC and does not use type(self) in the clone-method
             bitcoin_rpc = self.specter.rpc.clone()
-            amp_creds = self.get_amp_token()
             if not isinstance(bitcoin_rpc, BitcoinRPC):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
+            self.load_or_create_default_wallet(bitcoin_rpc)
+            amp_creds = self.get_amp_token()
             self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc)
             self._amp[network].sync()
         # it might be healthy or not, we're returning it nevertheless
@@ -70,6 +74,16 @@ class AmpissuerService(Service):
             return "liquidtestnet", app.config["API_TESTNET_URL"]
         else:
             return "liquidv1", app.config["API_MAINNET_URL"]
+
+    def load_or_create_default_wallet(self,rpc):
+        if '' not in rpc.listwallets():
+            try:
+                rpc.loadwallet("")
+            except RpcError as rpce:
+                if rpce.error_msg.endswith("Path does not exist."):
+                    rpc.createwallet("")
+                else:
+                    raise rpce
 
     def get_amp_token(self) -> str:
         ''' gets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
