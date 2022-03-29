@@ -454,7 +454,7 @@ class User(dict):
 
 
 class Amp:
-    def __init__(self, api, auth, rpc) -> None:
+    def __init__(self, api, auth, rpc, datadir=None) -> None:
         self._thread_exceptions = []
         self.api = api
         self._auth = auth
@@ -465,6 +465,12 @@ class Amp:
         self.healthy = False
         self._rpc = rpc
         self._session = None
+        self._rawassets = None # non-amp assets
+        self._datadir = datadir # folder for raw assets storage
+
+    @property
+    def rawassets(self):
+        return self._rawassets or {}
 
     @property
     def session(self):

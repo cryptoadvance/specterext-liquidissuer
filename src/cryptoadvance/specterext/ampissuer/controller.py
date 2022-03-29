@@ -63,6 +63,34 @@ def index():
     else:
         return redirect(url_for('ampissuer_endpoint.settings_get'))
 
+@ampissuer_endpoint.route("/rawassets/")
+def rawassets():
+    return render_template('ampissuer/rawassets.jinja', amp=ext().amp)
+
+@ampissuer_endpoint.route("/new_rawasset/", methods=["GET", "POST"])
+def new_rawasset():
+    obj = {"raw": True}
+    if request.method == "POST":
+        obj = {
+            "raw": True,
+            "asset_name": request.form.get("asset_name"),
+            "amount": int(request.form.get("amount") or 0),
+            "domain": request.form.get("domain"),
+            "ticker": request.form.get("ticker"),
+            "precision": int(request.form.get("precision", 0)),
+            "pubkey": request.form.get("pubkey"),
+            "is_confidential": bool(request.form.get("is_confidential")),
+            "reissue": int(request.form.get("reissue", 0) or 0),
+            "issue_address": request.form.get("issue_address", ""),
+            "reissue_address": request.form.get("reissue_address", ""),
+        }
+        try:
+            asset = ext().amp.new_rawasset(obj)
+            # return redirect(url_for('ampissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
+
 @ampissuer_endpoint.route("/assets/")
 @login_required
 def assets():

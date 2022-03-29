@@ -108,6 +108,14 @@ nav.side .selected{
     background: var(--cmap-bg-lighter);
     border-left: 3px solid var(--cmap-blue);
 }
+nav.side h1{
+    font-size: 14px;
+    text-transform: uppercase;
+    text-align: center;
+    opacity: 0.5;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
 .menu-icon{
     width: 40px;
     height: 40px;

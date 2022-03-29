@@ -17,27 +17,28 @@
             </small>
         </div>
     </a>
-{% if amp.healthy %}
-    {{ sidebar_btn('assets') }}
+    <h1>Normal assets</h1>
+    {{ sidebar_btn('rawassets') }}
         <div class="menu-icon">
             <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/asset.svg') }}"/>
         </div>
         <div class="menu-body">
             Assets<br>
+            <small>{{ amp.rawassets | length }} assets</small>
+        </div>
+    </a>
+{% if amp.healthy %}
+    <hr>
+    <h1>Blockstream AMP</h1>
+    {{ sidebar_btn('assets') }}
+        <div class="menu-icon">
+            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/asset.svg') }}"/>
+        </div>
+        <div class="menu-body">
+            AMP Assets<br>
             <small>{{ amp.assets | length }} assets</small>
         </div>
     </a>
-    <!--     <div class="submenu">
-        <a href="#">
-        <div>LGOO</div>
-        <div>Liquid Goo</div>
-        </a>
-        <a href="#">
-        <div>L-DIY</div>
-        <div>Specter-DIY preorder</div>
-        </a>
-    </div>
-    -->
     {{ sidebar_btn('categories') }}
         <div class="menu-icon">
             <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/category.svg') }}"/>
