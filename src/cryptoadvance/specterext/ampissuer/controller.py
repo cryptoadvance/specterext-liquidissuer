@@ -119,8 +119,9 @@ def asset_settings(asset_uuid):
                 asset.register()
                 flash('Asset registered')
             elif action == "authorize":
-                asset.authorize()
-                flash('Asset authorized')
+                # asset.authorize()
+                # flash('Asset authorized')
+                flash("Asset authorization is temporarily disabled", "error")
             elif action == "change_requirements":
                 requirements = []
                 for k, v in request.form.items():
