@@ -66,6 +66,9 @@
             <small>{{ amp.managers | length }} managers</small>
         </div>
     </a>
+{% endif %}
+    <hr>
+    <h1>Asset treasury</h1>
     {{ sidebar_btn('treasury') }}
         <div class="menu-icon">
             <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/wallet.svg') }}"/>
@@ -75,7 +78,6 @@
             <small>1 wallet</small>
         </div>
     </a>
-{% endif %}
     <div class="spacer"></div>
     {{ sidebar_btn('settings_get') }}
         <div class="menu-icon">

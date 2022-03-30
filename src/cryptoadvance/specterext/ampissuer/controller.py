@@ -86,7 +86,8 @@ def new_rawasset():
         }
         try:
             asset = ext().amp.new_rawasset(obj)
-            # return redirect(url_for('ampissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid))
+            flash(f"Asset {asset.ticker} was issued")
+            return redirect(url_for('ampissuer_endpoint.rawassets'))
         except Exception as e:
             flash(f"{e}", "error")
     return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)

@@ -12,6 +12,7 @@ from flask import current_app as app
 from cryptoadvance.specter.rpc import RpcError
 
 from .amp import Amp, APIException
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class AmpissuerService(Service):
         ''' Depending on the current node chosen in specter, this is returning a fitting
             Amp instance. It might be healthy or not. check with amp.healthy
         '''
-        network, api_url = self.detect_liquid()
+        network, api_url, registry_url, esplora_url = self.detect_liquid()
         if not self._amp.get(network):
             # We need a "pure" BitcoinRPC-class, NOT a liquidRPC-class here
             # specter.rpc would return a LiquidRPC class.
@@ -58,7 +59,8 @@ class AmpissuerService(Service):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
             self.load_or_create_default_wallet(bitcoin_rpc)
             amp_creds = self.get_amp_token()
-            self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc)
+            data_folder = os.path.join(self.specter.data_folder, "ampissuer", network)
+            self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc, data_folder=data_folder, registry_url=registry_url, esplora_url=esplora_url)
             self._amp[network].sync()
         # it might be healthy or not, we're returning it nevertheless
         return self._amp[network]
@@ -71,9 +73,9 @@ class AmpissuerService(Service):
             logger.error("Running on non Liquid-Server")
             raise SpecterError("Liquid node is not detected. Please configure and select Liquid node in Specter settings.")
         if self.specter.is_testnet:
-            return "liquidtestnet", app.config["API_TESTNET_URL"]
+            return "liquidtestnet", app.config["API_TESTNET_URL"], app.config["ASSET_REGISTRY_TESTNET_URL"], app.config["API_ESPLORA_TESTNET_URL"]
         else:
-            return "liquidv1", app.config["API_MAINNET_URL"]
+            return "liquidv1", app.config["API_MAINNET_URL"], app.config["ASSET_REGISTRY_MAINNET_URL"], app.config["API_ESPLORA_MAINNET_URL"]
 
     def load_or_create_default_wallet(self,rpc):
         if '' not in rpc.listwallets():
@@ -85,12 +87,12 @@ class AmpissuerService(Service):
     def get_amp_token(self) -> str:
         ''' gets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
         service_data = self.get_current_user_service_data()
-        network, _ = self.detect_liquid()
+        network, *_ = self.detect_liquid()
         return service_data.get(network, "")
 
     def set_amp_token(self, token):
         ''' sets the token specific to the current liquid-network (liquidtestnet / liquidv1)'''
-        network, _ = self.detect_liquid()
+        network, *_ = self.detect_liquid()
         self.update_current_user_service_data({network: token})
         if self._amp.get(network):
             self._amp[network].auth = token

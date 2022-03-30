@@ -10,6 +10,9 @@ class BaseConfig:
     # blockstream's asset registry api
     ASSET_REGISTRY_MAINNET_URL = "https://assets.blockstream.info/"
     ASSET_REGISTRY_TESTNET_URL = "https://assets-testnet.blockstream.info/"
+    # blockstream's block esplorer for asset info
+    API_ESPLORA_MAINNET_URL = "https://blockstream.info/liquid/api/"
+    API_ESPLORA_TESTNET_URL = "https://blockstream.info/liquidtestnet/api/"
 
 class DevelopmentConfig(BaseConfig):
     pass
