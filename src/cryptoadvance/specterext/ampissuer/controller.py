@@ -92,6 +92,25 @@ def new_rawasset():
             flash(f"{e}", "error")
     return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
 
+@ampissuer_endpoint.route("/rawasset/<asset_id>/", methods=["GET", "POST"])
+def rawasset(asset_id):
+    asset = ext().amp.rawassets[asset_id]
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "register":
+                asset.register()
+                flash('Asset registered')
+            elif action == "reissue":
+                amount = int(request.form.get('reissue_amount', 0) or 0)
+                txid = asset.reissue(amount)
+                flash(f"Reissued {amount} sats in transaction {txid}")
+            else:
+                raise NotImplementedError(f"Unknown action {action}")
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/rawasset.jinja', amp=ext().amp, asset=asset)
+
 @ampissuer_endpoint.route("/assets/")
 @login_required
 def assets():

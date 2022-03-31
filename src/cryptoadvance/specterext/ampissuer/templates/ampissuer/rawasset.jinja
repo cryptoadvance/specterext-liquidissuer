@@ -1,13 +1,8 @@
 {% extends "ampissuer/base.jinja" %}
 {% block main %}
 <main>
-    <div class="row inner">
-        <h1>Assets</h1>
-        <a class="btn tight-right" href="{{ url_for('ampissuer_endpoint.new_rawasset') }}"><img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/add.svg') }}"/> New asset</a>
-    </div>
-    {% for aid, asset in amp.rawassets.items() %}
     <div class="summary">
-        <a href="{{url_for('ampissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">{{ asset.ticker }} – {{ asset.name }}</a><br>
+        <a href=".">{{ asset.ticker }} – {{ asset.name }}</a><br>
         <small>Asset Id: {{ asset.asset_id }}</small>
         <hr/>
         <div class="row even">
@@ -22,10 +17,11 @@
             </div>
             <div>
                 <h2>Contract information</h2>
+                {% set contract = asset.get("contract", {}) %}
                 <table class="labeled">
                     <tr><td>Ticker:</td><td>{{ asset.ticker }} </td></tr>
                     <tr><td>Name:</td><td>{{ asset.name }} </td></tr>
-                    <tr><td>Domain:</td><td>{{ asset.domain }} </td></tr>
+                    <tr><td>Domain:</td><td>{{ contract.get('entity', {}).get("domain", "") }} </td></tr>
                     <tr><td>Precision:</td><td>1 {{ asset.ticker }} = {{ asset.in_sats }} {{ "sats" if asset.precision > 0 else "sat" }}</td></tr>
                 </table>
             </div>
@@ -43,10 +39,28 @@
                 </table>
             </div>
         </div>
-        <div class="actions right">
-            <a href="{{url_for('ampissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">Settings</a>
-        </div>
     </div>
-    {% endfor %}
+
+    <h1>Asset settings</h1>
+    <form action="." method="POST"><br>
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    {% if not asset.is_registered %}
+    Asset is not registered. <button type="submit" name="action" value="register" style="width:170px">Register</button><br>
+    {% if asset.domain %}
+    <small>
+        For registration place the following text at <code>https://{{asset.domain}}/.well_known/liquid-asset-proof-{{asset.asset_id}}</code>:<br>
+        <code>Authorize linking the domain name {{asset.domain}} to the Liquid asset {{asset.asset_id}}</code><br>
+    </small>
+    <a style="font-size: 14px; text-decoration: underline;" href="data:application/octet-stream;content-disposition=attachment,Authorize%20linking%20the%20domain%20name%20{{asset.domain}}%20to%20the%20Liquid%20asset%20{{asset.asset_id}}" download="liquid-asset-proof-{{asset.asset_id}}">Save file</a>
+    {% endif %}
+    <hr>
+    {% endif %}
+    {% if asset.is_reissuable %}
+    <div>
+        <label for="reissue_amount">Reissue more: </label>
+        <input type="number" id="reissue_amount" name="reissue_amount" value="0" style="width: 300px"> sats
+        <button type="submit" name="action" value="reissue">Reissue</button>
+    </div><br>
+    {% endif %}
 </main>
 {% endblock %}

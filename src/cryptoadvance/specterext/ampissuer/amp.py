@@ -39,6 +39,40 @@ class RawAsset(dict):
     def __init__(self, amp, **kwargs):
         self.amp = amp
         super().__init__(**kwargs)
+        self._esplora_info = {}
+        try:
+            res = requests.get(f"{self.amp.registry_url}{self.asset_id}")
+            if res.status_code <200 or res.status_code > 299:
+                self.registry_info = {}
+            else:
+                self.registry_info = res.json()
+        except:
+            self.registry_info = {}
+
+    def register(self):
+        data = {
+            "asset_id": self.asset_id,
+            "contract": self["contract"],
+        }
+        res = requests.post(self.amp.registry_url, headers={'content-type': 'application/json'}, data=json.dumps(data))
+        if res.status_code < 200 or res.status_code > 299:
+            raise RuntimeError(str(res.text))
+        self.registry_info = res.json()
+
+    def reissue(self, amount):
+        reissuedetails = self.treasury.reissueasset(self.asset_id, round(amount*1e-8, 8))
+        if self.esplora_info and "chain_stats" in self.esplora_info and "issued_amount" in self.esplora_info["chain_stats"]:
+            self._esplora_info["chain_stats"]["issued_amount"] += amount
+        return reissuedetails["txid"]
+
+    @property
+    def esplora_info(self):
+        if not self._esplora_info:
+            try:
+                self._esplora_info = requests.get(f"{self.amp.esplora_url}asset/{self.asset_id}").json()
+            except:
+                pass
+        return self._esplora_info
 
     @property
     def name(self):
@@ -54,11 +88,35 @@ class RawAsset(dict):
 
     @property
     def status(self):
-        return "not registered"
+        arr = [
+            "reissuable" if self.is_reissuable else "not reissuable",
+            "registered" if self.is_registered else "not registered",
+        ]
+        return ", ".join(arr)
+
+    @property
+    def precision(self):
+        return self["contract"].get("precision", 0)
+
+    @property
+    def in_sats(self):
+        return 10**(self["contract"].get("precision", 0))
+
+    @property
+    def domain(self):
+        return self.get("contract",{}).get("entity",{}).get("domain","")
+
+    @property
+    def is_registered(self):
+        return bool(self.registry_info)
 
     @property
     def treasury(self):
         return self.amp.rpc.wallet("")
+
+    @property
+    def token_amount(self):
+        return int(self.get("issueinfo", {}).get("token_amount", 0)*1e8)
 
     def balance(self):
         b = self.treasury.getbalances()
@@ -66,7 +124,7 @@ class RawAsset(dict):
 
     @property
     def is_reissuable(self):
-        return (self.get("issueinfo",{}).get("token_amount", 0) > 0)
+        return (self.token_amount > 0)
 
 
 class AmpAsset(dict):
@@ -455,6 +513,10 @@ class AmpAsset(dict):
     @property
     def asset_id(self):
         return self['asset_id']
+
+    @property
+    def domain(self):
+        return self.get("domain", "")
 
     @property
     def transfer_restricted(self):
