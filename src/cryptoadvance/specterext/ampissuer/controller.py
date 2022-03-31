@@ -446,7 +446,7 @@ def managers():
 @ampissuer_endpoint.route("/treasury/")
 @login_required
 def treasury():
-    return render_template('ampissuer/base.jinja', amp=ext().amp)
+    return render_template('ampissuer/treasury.jinja', amp=ext().amp)
 
 
 @ampissuer_endpoint.route("/settings/", methods=["GET"])
