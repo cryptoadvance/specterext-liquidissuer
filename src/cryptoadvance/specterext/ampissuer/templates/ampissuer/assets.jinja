@@ -2,7 +2,7 @@
 {% block main %}
 <main>
     <div class="row inner">
-        <h1>Assets</h1>
+        <h1>AMP Assets</h1>
         <a class="btn tight-right" href="{{ url_for('ampissuer_endpoint.new_asset') }}"><img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/add.svg') }}"/> New asset</a>
     </div>
     {% for aid, asset in amp.assets.items() %}
@@ -22,7 +22,7 @@
                         {% endfor %}
                     </td></tr>
                     <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
-                    <tr><td>Balance:</td><td>{{asset.balance()['trusted']}}</td></tr>
+                    <tr><td>Balance:</td><td>{{asset.balance()['trusted']}} sats</td></tr>
                 </table>
             </div>
             <div>

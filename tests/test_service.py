@@ -21,7 +21,7 @@ def test_AmpissuerService(svc_ESM_mock, mock_specter,mock_flaskapp):
     amp_svc.callback(after_serverpy_init_app)
     amp = amp_svc.amp
     assert '' in mock_specter.rpc.listwallets()
-    assert amp_svc.detect_liquid() == ('liquidtestnet', 'https://amp-test.blockstream.com/api/')
+    assert amp_svc.detect_liquid() == ('liquidtestnet', 'https://amp-test.blockstream.com/api/', "https://assets-testnet.blockstream.info/", "https://blockstream.info/liquidtestnet/api/")
 
 
 

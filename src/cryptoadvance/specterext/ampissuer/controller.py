@@ -63,6 +63,54 @@ def index():
     else:
         return redirect(url_for('ampissuer_endpoint.settings_get'))
 
+@ampissuer_endpoint.route("/rawassets/")
+def rawassets():
+    return render_template('ampissuer/rawassets.jinja', amp=ext().amp)
+
+@ampissuer_endpoint.route("/new_rawasset/", methods=["GET", "POST"])
+def new_rawasset():
+    obj = {"raw": True}
+    if request.method == "POST":
+        obj = {
+            "raw": True,
+            "asset_name": request.form.get("asset_name"),
+            "amount": int(request.form.get("amount") or 0),
+            "domain": request.form.get("domain"),
+            "ticker": request.form.get("ticker"),
+            "precision": int(request.form.get("precision", 0)),
+            "pubkey": request.form.get("pubkey"),
+            "is_confidential": bool(request.form.get("is_confidential")),
+            "reissue": int(request.form.get("reissue", 0) or 0),
+            "issue_address": request.form.get("issue_address", ""),
+            "reissue_address": request.form.get("reissue_address", ""),
+        }
+        try:
+            asset = ext().amp.new_rawasset(obj)
+            flash(f"Asset {asset.ticker} was issued")
+            return redirect(url_for('ampissuer_endpoint.rawassets'))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
+
+@ampissuer_endpoint.route("/rawasset/<asset_id>/", methods=["GET", "POST"])
+def rawasset(asset_id):
+    asset = ext().amp.rawassets[asset_id]
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "register":
+                asset.register()
+                flash('Asset registered')
+            elif action == "reissue":
+                amount = int(request.form.get('reissue_amount', 0) or 0)
+                txid = asset.reissue(amount)
+                flash(f"Reissued {amount} sats in transaction {txid}")
+            else:
+                raise NotImplementedError(f"Unknown action {action}")
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/rawasset.jinja', amp=ext().amp, asset=asset)
+
 @ampissuer_endpoint.route("/assets/")
 @login_required
 def assets():
