@@ -443,10 +443,29 @@ def managers():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/treasury/")
+@ampissuer_endpoint.route("/treasury/", methods=["GET", "POST"])
 @login_required
 def treasury():
-    return render_template('ampissuer/base.jinja', amp=ext().amp)
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "getnewaddress":
+                address = ext().amp.getnewaddress()
+                flash(f"New address: {address}")
+            elif action == "send":
+                address = request.form.get("sendaddress")
+                asset = request.form.get("asset")
+                if asset == "bitcoin":
+                    asset = None
+                amount = int(request.form.get("sendamount"))
+                txid = ext().amp.send(address=address, sats=amount, asset=asset)
+                flash(f"Transaction sent: {txid}")
+            else:
+                raise NotImplementedError(f"Unknown action {action}")
+        except Exception as e:
+            logger.exception(e)
+            flash(f"{e}", "error")
+    return render_template('ampissuer/treasury.jinja', amp=ext().amp)
 
 
 @ampissuer_endpoint.route("/settings/", methods=["GET"])
