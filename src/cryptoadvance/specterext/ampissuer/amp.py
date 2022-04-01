@@ -115,6 +115,10 @@ class RawAsset(dict):
         return self.amp.rpc.wallet("")
 
     @property
+    def token_id(self):
+        return self.get("assetinfo", {}).get("token")
+
+    @property
     def token_amount(self):
         return int(self.get("issueinfo", {}).get("token_amount", 0)*1e8)
 
@@ -420,6 +424,10 @@ class AmpAsset(dict):
         return self.summary.get('reissuance_tokens', 0) > 0
 
     @property
+    def token_id(self):
+        return self.get("reissuance_token_id")
+
+    @property
     def summary(self):
         if not self._summary:
             self._summary = self.amp.fetch_json(f"/assets/{self.asset_uuid}/summary")
@@ -577,6 +585,25 @@ class Amp:
         self._rpc = rpc
         self._session = None
         self._rawassets = None # non-amp assets
+        self._assetlabels = None
+        self._address = None
+
+    def send(self, address, sats, asset=None):
+        amount = round(1e-8*sats, 8)
+        if asset is None: # LBTC
+            return self.rpc.wallet().sendtoaddress(address, amount)
+        else:
+            return self.rpc.wallet().sendtoaddress(address, amount, "", "", False, False, 6, "unset", False, asset)
+
+    def getnewaddress(self):
+        self._address = self.rpc.wallet().getnewaddress()
+        return self._address
+
+    @property
+    def address(self):
+        if self._address is None:
+            self._address = self.rpc.wallet().getnewaddress()
+        return self._address
 
     @property
     def rawassets(self):
@@ -735,6 +762,27 @@ class Amp:
         aid = res['asset_uuid']
         self.sync()
         return self.assets[aid]
+
+    @property
+    def assetlabels(self):
+        if self._assetlabels is None:
+            self._assetlabels = self.rpc.dumpassetlabels()
+        return self._assetlabels
+
+    @property
+    def tickers(self):
+        obj = {}
+        for asset in list(self.assets.values()) + list(self.rawassets.values()):
+            obj[asset.asset_id] = asset.ticker
+            if asset.is_reissuable:
+                obj[asset.token_id] = f"{asset.ticker}-reissue"
+        return obj
+
+    def get_balance_sats(self):
+        b = self.rpc.wallet().getbalances()["mine"]["trusted"]
+        for k in list(b.keys()):
+            b[k] = round(b[k]*1e8)
+        return b
 
     def new_category(self, name, description=""):
         data = {
