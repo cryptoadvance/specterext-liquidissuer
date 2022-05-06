@@ -16,14 +16,14 @@ import os
 
 logger = logging.getLogger(__name__)
 
-class AmpissuerService(Service):
-    id = "ampissuer"
-    name = "Ampissuer Service"
-    icon = "ampissuer/img/diamond-multiple.svg"
-    logo = "ampissuer/img/diamond-multiple.svg"
+class LiquidissuerService(Service):
+    id = "liquidissuer"
+    name = "Liquidissuer Service"
+    icon = "liquidissuer/img/diamond-multiple.svg"
+    logo = "liquidissuer/img/diamond-multiple.svg"
     desc = "Issuing Amp Assets."
     has_blueprint = True
-    blueprint_module = "cryptoadvance.specterext.ampissuer.controller"
+    blueprint_module = "cryptoadvance.specterext.liquidissuer.controller"
     devstatus = devstatus_beta
     isolated_client = False
 
@@ -59,7 +59,7 @@ class AmpissuerService(Service):
                 raise Exception("clone is no longer returning a BitcoinRPC-instance")
             self.load_or_create_default_wallet(bitcoin_rpc)
             amp_creds = self.get_amp_token()
-            data_folder = os.path.join(self.specter.data_folder, "ampissuer", network)
+            data_folder = os.path.join(self.specter.data_folder, "liquidissuer", network)
             self._amp[network] = Amp(api_url, amp_creds, bitcoin_rpc, data_folder=data_folder, registry_url=registry_url, esplora_url=esplora_url)
             self._amp[network].sync()
         # it might be healthy or not, we're returning it nevertheless

@@ -1,0 +1,48 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+<div class="status-card">
+    <h1>Reissuance details</h1>
+    <p>{{reissuance['amount']}} {{asset.ticker}}</p>
+    {% if reissuance['confirmed'] %}
+    <img id="conf_img_confirmed" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/check_green.svg')}}" width="100px"/>
+    {% else %}
+    <img id="conf_img_confirmed" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/check_green.svg')}}" style="display: none" width="100px"/>
+    <img id="conf_img_pending" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/pending_orange.svg')}}" width="100px"/>
+    <br><small id="conf_number">{{reissuance['confirmations']}} of 2 confirmations</small>
+    {% endif %}
+    <p><small>TxId: {{reissuance['txid']}}</small></p>
+</div>
+
+{% if not reissuance['confirmed'] %}
+<script>
+// check status of the distribution
+async function check_status(){
+    let keep_going = true;
+    try{
+        let res = await fetch("./status/");
+        let status = await res.json();
+        console.log(status);
+        if(document.getElementById("conf_number")){
+            document.getElementById("conf_number").innerText = `${status.confirmations} of 2 confirmations`;
+        }
+        if(status.confirmed){
+            keep_going = false;
+            document.getElementById("conf_img_confirmed").style.display = 'inline-block';
+            if(document.getElementById("conf_img_pending")){
+                document.getElementById("conf_img_pending").style.display = 'none';
+            }
+            if(document.getElementById("conf_number")){
+                document.getElementById("conf_number").style.display = 'none';
+            }
+        }
+    }catch(err){
+        console.error(err);
+    }
+    if(keep_going){
+        window.setTimeout(check_status, 10000);
+    }
+}
+check_status();
+</script>
+{% endif %}
+{% endblock %}

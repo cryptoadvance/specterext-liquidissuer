@@ -1,0 +1,65 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+
+<h1>Asset settings</h1>
+<form action="{{url_for('liquidissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid)}}" method="POST"><br>
+<input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+{% if asset.is_reissuable %}
+<div>
+    <label for="reissue_amount">Reissue more: </label>
+    <input type="number" id="reissue_amount" name="reissue_amount" value="0" style="width: 300px">
+    <button type="submit" name="action" value="reissue">Reissue</button>
+</div><br>
+{% endif %}
+{% if not asset['is_registered'] %}
+Asset is not registered. <button type="submit" name="action" value="register" style="width:170px">Register</button><br>
+{% if asset.domain %}
+<small>
+    For registration place the following text at <code>https://{{asset.domain}}/.well_known/liquid-asset-proof-{{asset.asset_id}}</code>:<br>
+    <code>Authorize linking the domain name {{asset.domain}} to the Liquid asset {{asset.asset_id}}</code>
+</small><br>
+<a style="font-size: 14px; text-decoration: underline;" href="data:application/octet-stream;content-disposition=attachment,Authorize%20linking%20the%20domain%20name%20{{asset.domain}}%20to%20the%20Liquid%20asset%20{{asset.asset_id}}" download="liquid-asset-proof-{{asset.asset_id}}">Save file</a>
+{% endif %}
+<br>
+{% endif %}
+{% if not asset['is_authorized'] %}
+{# Asset is not authorized. <button type="submit" name="action" value="authorize" style="width:170px">Authorize</button><br><br> #}
+{% endif %}
+<h1>Requirements</h1>
+<table class="table">
+    <thead><tr>
+        <th width="50px">&nbsp;</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Investors</th>
+        <th>Users</th>
+        <th>Assets</th>
+    </tr></thead>
+    <tbody>
+    {% if not amp.categories %}
+        <tr><td colspan=7>No categories</td></tr>
+    {% endif %}
+    {% for cid, category in amp.categories.items() %}
+        <tr>
+            <td><input type="checkbox" name="cid_{{cid}}" {{ 'checked' if cid in asset['requirements'] else '' }} style="width: 20px; min-width:20px;"/></td>
+            <td>{{ category['id'] }}</td>
+            <td>{{ category['name'] }}</td>
+            <td>{{ category['description'] }}</td>
+            <td>{{ category['investors'] | length }}</td>
+            <td>{{ category['registered_users'] | length }}</td>
+            <td>
+                {% for aid in category['assets'] %}
+                <a class="tag">{{ amp.assets[aid].ticker }}</a>
+                {% endfor %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<button type="submit" name="action" value="change_requirements">Change requirements</button>
+<br><br><br>
+<h1>Hacks</h1>
+<button type="submit" name="action" value="fix_reissuances">Fix reissuances</button>
+</form>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <form class="new-form" action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <h1>Issue new {% if not obj.get("raw") %}AMP{% endif %} asset</h1>
+    {% if obj.get("raw") %}
+    <small style="color: #FF9A00; padding-left: 0px; opacity: 1;"><b>Note:</b> You are issuing a standard Liquid asset that is <b>NOT</b> tracked by the AMP servers.</small>
+    {% else %}
+    <small style="color: #fff; padding-left: 0px;"><b>Note:</b> You are issuing an <b>AMP</b> asset that will be tracked by the AMP servers.</small>
+    {% endif %}
+    <br>
+    <label for="ticker">Asset ticker (5 chars)</label>
+    <input type="text" id="ticker" name="ticker" placeholder="TICKR" style="width:100px" value="{{obj.get('ticker','')}}"><br>
+    <label for="asset_name">Asset name</label>
+    <input type="text" id="asset_name" name="asset_name" placeholder="Liquid Asset" value="{{obj.get('asset_name','')}}"><br>
+    <label for="amount">Issue amount (in sats)</label>
+    <input type="number" id="amount" name="amount" min="0" step="any" placeholder="Amount to issue (in sats)" value="{{obj.get('amount','')}}"><br>
+    <label for="precision">Issue precision</label>
+    <input type="number" id="precision" name="precision" min="0" step="1" placeholder="Precision of the asset" value="{{obj.get('precision',0)}}"><br>
+
+    <label for="issue_address">Address to send asset to (leave empty to use default Elements wallet)</label>
+    <input type="text" id="issue_address" name="issue_address" placeholder="lq1q..." value="{{obj.get('issue_address','')}}"><br>
+
+    <label for="reissue">Reissuance token</label>
+    <input type="number" id="reissue" name="reissue" min="0" step="1" placeholder="Amount of reissuance tokens" value="{{obj.get('reissue',0)}}"><br>
+
+    <label for="reissue_address">Address to send reissuance token to (leave empty to use default Elements wallet)</label>
+    <input type="text" id="reissue_address" name="reissue_address" placeholder="lq1q..." value="{{obj.get('reissue_address','')}}"><br>
+
+    <label for="domain">Issuer domain</label>
+    <input type="text" id="domain" name="domain" placeholder="blockstream.info" value="{{obj.get('domain','')}}"><br>
+    <label for="pubkey">Issuer pubkey (leave empty to assign from the treasury address)</label>
+    <input type="text" id="pubkey" name="pubkey" placeholder="Hex public key" value="{{obj.get('pubkey','')}}"><br>
+    <label class="checkbox" for="is_confidential"><input type="checkbox" id="is_confidential" name="is_confidential" {{'checked' if obj.get('is_confidential') else ''}}> Issue as confidential</label>
+    {% if not obj.get("raw") %}
+    <label class="checkbox" for="transfer_restricted"><input type="checkbox" id="transfer_restricted" name="transfer_restricted"  {{'checked' if obj.get('transfer_restricted') else ''}}> Transfer-restricted</label>
+    {% endif %}
+    <hr>
+    <button type="submit" name="action" value="issue">Issue new asset</button>
+    </form>
+</main>
+{% endblock %}

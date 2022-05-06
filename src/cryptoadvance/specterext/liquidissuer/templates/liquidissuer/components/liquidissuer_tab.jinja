@@ -1,0 +1,12 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <img src="{{ url_for(service.id +'_endpoint' + '.static', filename=service.logo) }}" width="100"/>  
+    <br>  
+    {% from 'liquidissuer/components/liquidissuer_menu.jinja' import liquidissuer_menu with context %}
+    {{ liquidissuer_menu(tab) }}
+    <br>
+    {% block content %}
+    {% endblock %}
+</main>
+{% endblock %}

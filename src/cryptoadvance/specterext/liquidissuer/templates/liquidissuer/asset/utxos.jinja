@@ -1,0 +1,58 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+<div class="inner row">
+    <h1>UTXOs – {{ utxos | length }}</h1>
+    <div class="small tight-top">All asset UTXOs</div>
+</div>
+<table class="table">
+    <thead><tr>
+        <th width="50px"><img class="tiny small" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/lock.svg') }}"/></th>
+        <th>TxId</th>
+        <th>Vout</th>
+        <th>User</th>
+        <th>GAID</th>
+        <th>Amount</th>
+        <th width="200px"><!-- Actions --></th>
+    </tr></thead>
+    <tbody>
+    {% if not utxos %}
+        <tr><td colspan=7>No UTXOs</td></tr>
+    {% endif %}
+    {% for utxo in utxos %}
+        <tr>
+            <td>{% if utxo['blacklisted'] %}<img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/lock.svg') }}"/>{% endif %}</td>
+            <td>{{utxo['txid']}}</td><td>{{utxo['vout']}}</td>
+            {% set user = (amp.users.get(utxo['registered_user'], {}))%}
+            <td>
+            {% if 'is_company' in user %}
+                {% if user.get('is_company') %}
+                <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/company.svg')}}"/>
+                {% else %}
+                <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/person.svg')}}"/>
+                {% endif %}
+            {% else %}
+                <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/wallet.svg')}}"/>
+            {% endif %}
+            {{ user.get('name', 'Treasury') }}
+            </td>
+            <td>{{ user.get('GAID', '') }}</td>
+            <td>{{utxo['amount']}}</td>
+            <td class="onhover" width="300px" style="text-align: right">
+                <form class="controls" action="{{url_for('liquidissuer_endpoint.asset_utxos', asset_uuid=asset.asset_uuid)}}" method="POST">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="txid" value="{{utxo['txid']}}"/>
+                <input type="hidden" name="vout" value="{{utxo['vout']}}"/>
+                {% if 'is_company' in user %}
+                    {% if utxo['blacklisted'] %}
+                    <button type="submit" name="action" value="unlock"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/unlock.svg') }}"/> Unlock</button>
+                    {% else %}
+                    <button type="submit" name="action" value="lock"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/lock.svg') }}"/> Lock</button>
+                    {% endif %}
+                {% endif %}
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

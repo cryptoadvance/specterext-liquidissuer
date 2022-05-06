@@ -1,0 +1,73 @@
+{% extends "liquidissuer/components/liquidissuer_tab.jinja" %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/css/styles.css') }}">
+{% endblock %}
+
+{% block sidebar %}
+{% include "liquidissuer/components/sidebar.jinja" %}
+{% endblock %}
+
+{% block title %}Settings{% endblock %}
+{% set tab = 'settings_get' %}
+{% block content %}
+
+
+    <div class="card">
+        <h1>{{ _("Configure The Amp Issuer") }}</h1>
+        <br/>
+
+        <form action="{{ url_for(service.get_blueprint_name() + '.settings_post') }}" method="POST" role="form">
+            <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <h1>{{ _("Menu Item") }} </h1>
+            <div class="note">{{ _("Whether to show a menu item:") }}</div>
+            <select name="show_menu">
+                <option value="yes"   {% if show_menu %}selected{% endif %}>Yes</option>
+                <option value="no"    {% if not show_menu %}selected{% endif %}>No</option>
+            </select>
+            <br/>
+            <br/>
+            <br/>
+
+            <h1>{{ _("Amp Authentication") }} </h1>
+            {% if amp_token %}
+            <div class="note">
+				{{ _("Your token has been set!") }}<br>
+                <button type="submit" name="action" value="delete_token" class="btn">{{ _("Delete Token") }}</button>
+			</div>
+            <br/>
+            {% else %}
+                <div class="note">
+                {{ _("In order to use this application, you need a token which you can get by providing username/pasword here.") }}<br>
+                These credentials need to be valid for AMP {{ "production" if specter.chain == "liquidv1" else "Test" }}.
+                </div>
+                <br>
+                Username:
+                <input id="amp_username" type="text" name="amp_username" value=""><br>
+                Password:
+                <input id="amp_password" type="password" name="amp_password" value=""><br>
+                <div class="row">
+                    <button type="submit" name="action" value="obtain_token" class="btn">{{ _("Obtain Token") }}</button>
+                </div>
+                <br><br>
+
+            {% endif %}
+            <br>
+            
+            <div class="row">
+                <button type="submit" name="action" value="save" class="btn">{{ _("Save") }}</button>
+            </div>
+        </form>
+        <br>
+    </div>
+    <br/>
+
+
+
+    <br/>
+    <br/>
+
+
+{% endblock %}
+

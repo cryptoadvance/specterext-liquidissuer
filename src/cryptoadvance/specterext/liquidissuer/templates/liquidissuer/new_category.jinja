@@ -1,0 +1,16 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <form class="new-form" action="{{url_for('liquidissuer_endpoint.new_category')}}" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <h1>Create new category</h1>
+    <br>
+    <label for="category_name">Category name</label>
+    <input type="text" id="category_name" name="category_name" placeholder="short tag" value="{{obj.get('category_name','')}}"><br>
+    <label for="category_description">Description</label>
+    <input type="text" id="category_description" name="category_description" placeholder="longish description" value="{{obj.get('category_description','')}}"><br>
+    <hr>
+    <button type="submit" name="action" value="create">Create new category</button>
+    </form>
+</main>
+{% endblock %}

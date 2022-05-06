@@ -1,0 +1,52 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <div class="new-form">
+        <h1>User {{user.id}}</h1>
+        <p><small>Name:</small><br>
+            {% if user['is_company'] %}
+            <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/company.svg')}}" width="25px" style="vertical-align: text-bottom;"/>
+            {% else %}
+            <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/person.svg')}}" width="25px" style="vertical-align: text-bottom;"/>
+            {% endif %}
+            {{user.name}}
+        </p>
+        <p><small>GAID:</small><br>{{user.GAID}}</p>
+    </div>
+    <h1>Categories</h1>
+    <form action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <table class="table">
+        <thead><tr>
+            <th width="50px">&nbsp;</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Assets</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.categories %}
+            <tr><td colspan=5>No categories</td></tr>
+        {% endif %}
+        {% for cid, category in amp.categories.items() %}
+            <tr>
+                <td><input style="width: 20px; min-width: 20px;" name="cid_{{cid}}" type="checkbox" {{ 'checked' if cid in user['categories'] else '' }}></td>
+                <td>{{ category['id'] }}</td>
+                <td>{{ category['name'] }}</td>
+                <td>{{ category['description'] }}</td>
+                <td>
+                    {% for aid in category['assets'] %}
+                    <a class="tag">{{ amp.assets[aid].ticker }}</a>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <center>
+        <button style="width: 250px" type="submit" name="action" value="update_categories">Update categories</button><hr>
+        {# <button style="width: 250px" type="submit" name="action" value="delete" class="danger"  onclick="return confirm('Are you sure you want to delete this user?')"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/delete.svg') }}"/> Delete user</button> #}
+    </center>
+    </form>
+</main>
+{% endblock %}

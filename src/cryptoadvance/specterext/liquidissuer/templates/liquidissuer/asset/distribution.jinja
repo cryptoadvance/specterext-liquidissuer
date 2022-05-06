@@ -1,0 +1,76 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+<div class="status-card">
+    <h1>Distribution details</h1>
+    <p>{{distr['distribution_uuid']}}</p>
+    {% if distr['confirmed'] %}
+    <img id="conf_img_confirmed" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/check_green.svg')}}" width="100px"/>
+    {% else %}
+    <img id="conf_img_confirmed" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/check_green.svg')}}" style="display: none" width="100px"/>
+    <img id="conf_img_pending" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/pending_orange.svg')}}" width="100px"/>
+    <br><small id="conf_number">{{distr['confirmations']}} of 2 confirmations</small>
+    {% endif %}
+    <p>Status: <span id="distribution_status">{{distr['distribution_status']}}</span></p>
+    <p><small>TxId: {{distr['transactions'][0]['txid']}}</small></p>
+    <form id="confirm_form" method="POST" style="display:none" action="{{url_for('liquidissuer_endpoint.change_distribution', asset_uuid=asset.asset_uuid, distribution_uuid=distr['distribution_uuid'])}}">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <button type="submit" name="action" value="confirm">Confirm manually</button>
+    </form>
+</div>
+<div class="inner">
+    <h1>Assignments in this distribution</h1>
+</div>
+<table class="table">
+    <thead><tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Amount</th>
+    </tr></thead>
+    <tbody>
+    {% for ass in distr['transactions'][0]['assignments'] %}
+        <tr>
+            <td>{{ass['id']}}</td>
+            <td>{{amp.users[ass['registered_user']]['name']}}</td>
+            <td>{{ass['amount']}}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% if distr['distribution_status'] %}
+<script>
+// check status of the distribution
+async function check_status(){
+    let keep_going = true;
+    try{
+        let res = await fetch("./status/");
+        let status = await res.json();
+        console.log(status);
+        if(document.getElementById("conf_number")){
+            document.getElementById("conf_number").innerText = `${status.confirmations} of 2 confirmations`;
+        }
+        if(status.distribution_status == 'CONFIRMED'){
+            keep_going = false;
+            document.getElementById("distribution_status").innerText = status.distribution_status;
+            document.getElementById("conf_img_confirmed").style.display = 'inline-block';
+            if(document.getElementById("conf_img_pending")){
+                document.getElementById("conf_img_pending").style.display = 'none';
+            }
+            if(document.getElementById("conf_number")){
+                document.getElementById("conf_number").style.display = 'none';
+            }
+        }else{
+            if(status.confirmations >= 2){
+                document.getElementById('confirm_form').style.display='inline-block';
+            }
+        }
+    }catch(err){
+        console.error(err);
+    }
+    if(keep_going){
+        window.setTimeout(check_status, 10000);
+    }
+}
+check_status();
+</script>
+{% endif %}
+{% endblock %}
