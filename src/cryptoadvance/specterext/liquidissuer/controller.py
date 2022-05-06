@@ -8,8 +8,8 @@ from cryptoadvance.specter.services.service_encrypted_storage import \
     ServiceEncryptedStorageError
 from cryptoadvance.specter.user import User
 from cryptoadvance.specter.wallet import Wallet
-from cryptoadvance.specterext.ampissuer.amp import Amp, APIException
-from cryptoadvance.specterext.ampissuer.rpc import SpecterError
+from cryptoadvance.specterext.liquidissuer.amp import Amp, APIException
+from cryptoadvance.specterext.liquidissuer.rpc import SpecterError
 from flask import current_app as app
 from flask import flash, redirect, render_template, request, url_for
 from flask_babel import lazy_gettext as _
