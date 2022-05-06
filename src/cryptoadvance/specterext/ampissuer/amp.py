@@ -5,7 +5,8 @@ import shutil
 import threading
 import time
 from typing import Tuple
-
+import math
+import hashlib
 import requests
 from cryptoadvance.specter.rpc import BitcoinRPC
 from embit.liquid.addresses import addr_decode
@@ -15,6 +16,11 @@ from .rpc import find_rpc
 logger = logging.getLogger(__name__)
 
 USE_CACHE = False
+
+VERSION = 0 # for asset registration
+FEE = 1000e-8 # 1000 sats, first estimate
+FEE_RATE = 0.1 # default fee rate in Liquid
+
 
 def list2dict(arr:list, idkey:str='id', cls=None, args=[]) -> dict:
     """Converts a list to dict using `idkey` field as key in the dict"""
@@ -28,7 +34,104 @@ class APIException(Exception):
     def __str__(self):
         return f"Error {self.code}: {self.msg}"
 
-class Asset(dict):
+class RawAsset(dict):
+    """Not an AMP but a normal asset"""
+    def __init__(self, amp, **kwargs):
+        self.amp = amp
+        super().__init__(**kwargs)
+        self._esplora_info = {}
+        try:
+            res = requests.get(f"{self.amp.registry_url}{self.asset_id}")
+            if res.status_code <200 or res.status_code > 299:
+                self.registry_info = {}
+            else:
+                self.registry_info = res.json()
+        except:
+            self.registry_info = {}
+
+    def register(self):
+        data = {
+            "asset_id": self.asset_id,
+            "contract": self["contract"],
+        }
+        res = requests.post(self.amp.registry_url, headers={'content-type': 'application/json'}, data=json.dumps(data))
+        if res.status_code < 200 or res.status_code > 299:
+            raise RuntimeError(str(res.text))
+        self.registry_info = res.json()
+
+    def reissue(self, amount):
+        reissuedetails = self.treasury.reissueasset(self.asset_id, round(amount*1e-8, 8))
+        if self.esplora_info and "chain_stats" in self.esplora_info and "issued_amount" in self.esplora_info["chain_stats"]:
+            self._esplora_info["chain_stats"]["issued_amount"] += amount
+        return reissuedetails["txid"]
+
+    @property
+    def esplora_info(self):
+        if not self._esplora_info:
+            try:
+                self._esplora_info = requests.get(f"{self.amp.esplora_url}asset/{self.asset_id}").json()
+            except:
+                pass
+        return self._esplora_info
+
+    @property
+    def name(self):
+        return self["contract"]["name"]
+
+    @property
+    def ticker(self):
+        return self["contract"]["ticker"]
+
+    @property
+    def asset_id(self):
+        return self["assetinfo"]["asset"]
+
+    @property
+    def status(self):
+        arr = [
+            "reissuable" if self.is_reissuable else "not reissuable",
+            "registered" if self.is_registered else "not registered",
+        ]
+        return ", ".join(arr)
+
+    @property
+    def precision(self):
+        return self["contract"].get("precision", 0)
+
+    @property
+    def in_sats(self):
+        return 10**(self["contract"].get("precision", 0))
+
+    @property
+    def domain(self):
+        return self.get("contract",{}).get("entity",{}).get("domain","")
+
+    @property
+    def is_registered(self):
+        return bool(self.registry_info)
+
+    @property
+    def treasury(self):
+        return self.amp.rpc.wallet("")
+
+    @property
+    def token_id(self):
+        return self.get("assetinfo", {}).get("token")
+
+    @property
+    def token_amount(self):
+        return int(self.get("issueinfo", {}).get("token_amount", 0)*1e8)
+
+    def balance(self):
+        b = self.treasury.getbalances()
+        return { k: int(1e8*b.get("mine", {}).get(k, {}).get(self.asset_id, 0)) for k in ["trusted", "untrusted_pending"] }
+
+    @property
+    def is_reissuable(self):
+        return (self.token_amount > 0)
+
+
+class AmpAsset(dict):
     def __init__(self, amp, **kwargs):
         self._thread_exceptions = []
         self.amp = amp
@@ -321,6 +424,10 @@ class Asset(dict):
         return self.summary.get('reissuance_tokens', 0) > 0
 
     @property
+    def token_id(self):
+        return self.get("reissuance_token_id")
+
+    @property
     def summary(self):
         if not self._summary:
             self._summary = self.amp.fetch_json(f"/assets/{self.asset_uuid}/summary")
@@ -416,6 +523,10 @@ class Asset(dict):
         return self['asset_id']
 
     @property
+    def domain(self):
+        return self.get("domain", "")
+
+    @property
     def transfer_restricted(self):
         return self['transfer_restricted']
     
@@ -454,9 +565,17 @@ class User(dict):
 
 
 class Amp:
-    def __init__(self, api, auth, rpc) -> None:
+    def __init__(self, api, auth, rpc, data_folder="assets", registry_url=None, esplora_url=None) -> None:
+        self.data_folder = os.path.expanduser(data_folder)
+        if not os.path.exists(self.data_folder):
+            try:
+                os.makedirs(self.data_folder)
+            except:
+                pass
         self._thread_exceptions = []
         self.api = api
+        self.registry_url = registry_url
+        self.esplora_url = esplora_url
         self._auth = auth
         self.assets = {}
         self.categories = {}
@@ -465,12 +584,147 @@ class Amp:
         self.healthy = False
         self._rpc = rpc
         self._session = None
+        self._rawassets = None # non-amp assets
+        self._assetlabels = None
+        self._address = None
+
+    def send(self, address, sats, asset=None):
+        amount = round(1e-8*sats, 8)
+        if asset is None: # LBTC
+            return self.rpc.wallet().sendtoaddress(address, amount)
+        else:
+            return self.rpc.wallet().sendtoaddress(address, amount, "", "", False, False, 6, "unset", False, asset)
+
+    def getnewaddress(self):
+        self._address = self.rpc.wallet().getnewaddress()
+        return self._address
+
+    @property
+    def address(self):
+        if self._address is None:
+            self._address = self.rpc.wallet().getnewaddress()
+        return self._address
+
+    @property
+    def rawassets(self):
+        if self._rawassets is None:
+            self._rawassets = {}
+            files = [f for f in os.listdir(self.data_folder) if f.startswith("asset_") and f.endswith(".json")]
+            for f in files:
+                try:
+                    with open(os.path.join(self.data_folder, f)) as f:
+                        asset = RawAsset(self, **json.load(f))
+                        self._rawassets[asset.asset_id] = asset
+                except Exception as e:
+                    print(e)
+        return self._rawassets or {}
 
     @property
     def session(self):
         if self._session is None:
             self._session = requests.Session()
         return self._session
+
+    def new_rawasset(self, obj):
+        asset_address = obj.get("issue_address", "")
+        token_address = obj.get("reissue_address", "")
+        w = self.rpc.wallet()
+        pubkey = obj.get("pubkey")
+        if not asset_address:
+            asset_address = w.getnewaddress()
+        if not token_address:
+            token_address = w.getnewaddress()
+        if not pubkey:
+            try:
+                sc, pub = addr_decode(asset_address)
+            except:
+                raise RuntimeError(f"Invalid address {asset_address}")
+            if not pub:
+                raise RuntimeError("Address must be confidential")
+            else:
+                pubkey = str(pub)
+        name = obj.get("asset_name","")
+        domain = obj.get("domain","")
+        precision = int(obj.get("precision", "0"))
+        ticker = obj.get("ticker", "")
+        # TODO: pubkey should be from utxo instead
+        pubkey = pubkey or w.getaddressinfo(asset_address).get("pubkey") or w.getaddressinfo(w.getnewaddress())["pubkey"]
+        contract=f'{{"entity":{{"domain":"{domain}"}},"issuer_pubkey":"{pubkey}","name":"{name}","precision":{precision},"ticker":"{ticker}","version":{VERSION}}}'
+        contract_hash = hashlib.sha256(contract.encode()).digest()
+        contract_obj = json.loads(contract)
+        # validate
+        data = {
+            "contract": contract_obj,
+            "contract_hash": contract_hash[::-1].hex()
+        }
+        res = requests.post(f"{self.registry_url}contract/validate", headers={'content-type': 'application/json'}, data=json.dumps(data))
+        if (res.status_code < 200 or res.status_code >= 300):
+            raise RuntimeError(res.text)
+
+        asset_amount = round(int(obj.get("amount") or 0)*1e-8, 8)
+        token_amount = round(int(obj.get("reissue", 0) or 0)*1e-8, 8)
+        blind = bool(obj.get("is_confidential"))
+
+        LBTC = w.dumpassetlabels()["bitcoin"]
+        # unspent LBTC outputs
+        utxos = [utxo for utxo in w.listunspent(1, 9999999, [], True, {"asset": LBTC})]
+        if not utxos:
+            raise RuntimeError(f"Not enough funds. Send some LBTC to {w.getnewaddress()}.")
+
+        utxos.sort(key=lambda utxo: -utxo["amount"])
+        utxo = utxos[0]
+        fee = FEE
+        # run twice - with base fee and then with real fee
+        for _ in range(2):
+            rawtx = w.createrawtransaction(
+                [{"txid": utxo["txid"], "vout": utxo["vout"]}],
+                [{ w.getrawchangeaddress(): round(utxo["amount"]-fee, 8)}, {"fee": fee}]
+            )
+            issueconf = {
+                "asset_amount": asset_amount,
+                "asset_address": asset_address,
+                "blind": blind,
+                "contract_hash": contract_hash[::-1].hex(),
+            }
+            if token_amount != 0:
+                issueconf.update({
+                    "token_amount": token_amount,
+                    "token_address": token_address,
+                })
+
+            rawissue = w.rawissueasset(rawtx, [issueconf])[0]
+            hextx = rawissue.pop("hex")
+            # unsigned = w.converttopsbt(rawissue["hex"])
+            # blinded = w.walletprocesspsbt(unsigned)["psbt"]
+            # finalized = w.finalizepsbt(blinded)['hex']
+            blinded = w.blindrawtransaction(hextx, False, [], blind)
+            finalized = w.signrawtransactionwithwallet(blinded)["hex"]
+            mempooltest = w.testmempoolaccept([finalized])[0]
+            if not mempooltest["allowed"]:
+                raise RuntimeError(f"Tx can't be broadcasted: {mempooltest['reject-reason']}")
+            vsize = mempooltest["vsize"]
+            fee = round(math.ceil(vsize*FEE_RATE)*1e-8, 8)
+
+        assetid = rawissue["asset"]
+        backup = {
+            "contract": contract_obj,
+            "contract_hash": contract_hash[::-1].hex(),
+            "issueinfo": issueconf,
+            "assetinfo": rawissue,
+            "txinfo": mempooltest,
+            # "tx": finalized,
+            "registration": {
+                "url": f"https://{domain}/.well_known/liquid-asset-proof-{assetid}",
+                "content": f"Authorize linking the domain name {domain} to the Liquid asset {assetid}",
+            },
+        }
+        # save backup
+        with open(os.path.join(self.data_folder, f"asset_{assetid}.json"), "w") as f:
+            f.write(json.dumps(backup, indent=2))
+        w.sendrawtransaction(finalized)
+        asset = RawAsset(self, **backup)
+        self._rawassets[assetid] = asset
+        return asset
 
     def new_asset(self, obj):
         addr = obj.get("issue_address", "")
@@ -508,6 +762,27 @@ class Amp:
         aid = res['asset_uuid']
         self.sync()
         return self.assets[aid]
+
+    @property
+    def assetlabels(self):
+        if self._assetlabels is None:
+            self._assetlabels = self.rpc.dumpassetlabels()
+        return self._assetlabels
+
+    @property
+    def tickers(self):
+        obj = {}
+        for asset in list(self.assets.values()) + list(self.rawassets.values()):
+            obj[asset.asset_id] = asset.ticker
+            if asset.is_reissuable:
+                obj[asset.token_id] = f"{asset.ticker}-reissue"
+        return obj
+
+    def get_balance_sats(self):
+        b = self.rpc.wallet().getbalances()["mine"]["trusted"]
+        for k in list(b.keys()):
+            b[k] = round(b[k]*1e8)
+        return b
 
     def new_category(self, name, description=""):
         data = {
@@ -604,7 +879,7 @@ class Amp:
 
     def sync_assets(self):
         try:
-            self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=Asset, args=[self])
+            self.assets = list2dict(self.fetch_json("/assets"), 'asset_uuid', cls=AmpAsset, args=[self])
         except Exception as e:
             self._thread_exceptions.append(e)
             raise e

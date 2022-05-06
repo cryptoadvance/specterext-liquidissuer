@@ -23,7 +23,7 @@
                     <td>Balance:</td>
                     <td>
                         {% set balance = asset.balance() %}
-                        {{balance['trusted']}}
+                        {{balance['trusted']}} sats
                         {% if balance['untrusted_pending'] %}
                         ({{balance['untrusted_pending']}} unconfirmed)
                         {% endif %}

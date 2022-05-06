@@ -63,6 +63,54 @@ def index():
     else:
         return redirect(url_for('ampissuer_endpoint.settings_get'))
 
+@ampissuer_endpoint.route("/rawassets/")
+def rawassets():
+    return render_template('ampissuer/rawassets.jinja', amp=ext().amp)
+
+@ampissuer_endpoint.route("/new_rawasset/", methods=["GET", "POST"])
+def new_rawasset():
+    obj = {"raw": True}
+    if request.method == "POST":
+        obj = {
+            "raw": True,
+            "asset_name": request.form.get("asset_name"),
+            "amount": int(request.form.get("amount") or 0),
+            "domain": request.form.get("domain"),
+            "ticker": request.form.get("ticker"),
+            "precision": int(request.form.get("precision", 0)),
+            "pubkey": request.form.get("pubkey"),
+            "is_confidential": bool(request.form.get("is_confidential")),
+            "reissue": int(request.form.get("reissue", 0) or 0),
+            "issue_address": request.form.get("issue_address", ""),
+            "reissue_address": request.form.get("reissue_address", ""),
+        }
+        try:
+            asset = ext().amp.new_rawasset(obj)
+            flash(f"Asset {asset.ticker} was issued")
+            return redirect(url_for('ampissuer_endpoint.rawassets'))
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
+
+@ampissuer_endpoint.route("/rawasset/<asset_id>/", methods=["GET", "POST"])
+def rawasset(asset_id):
+    asset = ext().amp.rawassets[asset_id]
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "register":
+                asset.register()
+                flash('Asset registered')
+            elif action == "reissue":
+                amount = int(request.form.get('reissue_amount', 0) or 0)
+                txid = asset.reissue(amount)
+                flash(f"Reissued {amount} sats in transaction {txid}")
+            else:
+                raise NotImplementedError(f"Unknown action {action}")
+        except Exception as e:
+            flash(f"{e}", "error")
+    return render_template('ampissuer/rawasset.jinja', amp=ext().amp, asset=asset)
+
 @ampissuer_endpoint.route("/assets/")
 @login_required
 def assets():
@@ -119,8 +167,9 @@ def asset_settings(asset_uuid):
                 asset.register()
                 flash('Asset registered')
             elif action == "authorize":
-                asset.authorize()
-                flash('Asset authorized')
+                # asset.authorize()
+                # flash('Asset authorized')
+                flash("Asset authorization is temporarily disabled", "error")
             elif action == "change_requirements":
                 requirements = []
                 for k, v in request.form.items():
@@ -394,10 +443,29 @@ def managers():
     return render_template('ampissuer/base.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/treasury/")
+@ampissuer_endpoint.route("/treasury/", methods=["GET", "POST"])
 @login_required
 def treasury():
-    return render_template('ampissuer/base.jinja', amp=ext().amp)
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "getnewaddress":
+                address = ext().amp.getnewaddress()
+                flash(f"New address: {address}")
+            elif action == "send":
+                address = request.form.get("sendaddress")
+                asset = request.form.get("asset")
+                if asset == "bitcoin":
+                    asset = None
+                amount = int(request.form.get("sendamount"))
+                txid = ext().amp.send(address=address, sats=amount, asset=asset)
+                flash(f"Transaction sent: {txid}")
+            else:
+                raise NotImplementedError(f"Unknown action {action}")
+        except Exception as e:
+            logger.exception(e)
+            flash(f"{e}", "error")
+    return render_template('ampissuer/treasury.jinja', amp=ext().amp)
 
 
 @ampissuer_endpoint.route("/settings/", methods=["GET"])
@@ -419,6 +487,7 @@ def settings_post():
         try:
             token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
             ext().set_amp_token("token " + token)
+            user = app.specter.user_manager.get_user()
             user.add_service(AmpissuerService.id)
         except APIException as apie:
             flash_apiexc(apie)

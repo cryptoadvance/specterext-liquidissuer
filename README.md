@@ -1,6 +1,4 @@
-# Amp issuer
-
-## Run
+# Liquid issuer
 
 Make sure your liquid node is running on [`liquidtestnet`](https://liquidtestnet.com/) with rpc server enabled (`elementsd`, or `elements-qt` with `server=1` in `elements.conf`).
 Also , you'll need an existing default wallet on that elements node, something like this:
@@ -11,12 +9,12 @@ elements-cli -rpcport=18891 -rpcuser=liquid -rpcpassword=liquid createwallet ""
 
 ```
 cd src                # or wherever all your projects are
-git clone git@github.com:cryptoadvance/amp-issuer.git
+git clone git@github.com:cryptoadvance/liquidissuer.git
 
 # we assume that you have cloned specter-desktop in parallel with amp-issuer
 cd ../specter-desktop # your specter-desktop is here
 git checkout master   # you need at least the master-branch
-cd ../amp-issuer       # jump back to ampissuer
+cd ../liquidissuer       # jump back to liquidissuer
 
 # Use the environment from specter-desktop
 . ../specter-desktop/.env/bin/activate
