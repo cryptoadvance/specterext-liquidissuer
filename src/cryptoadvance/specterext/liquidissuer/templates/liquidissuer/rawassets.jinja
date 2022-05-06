@@ -1,13 +1,13 @@
-{% extends "ampissuer/base.jinja" %}
+{% extends "liquidissuer/base.jinja" %}
 {% block main %}
 <main>
     <div class="row inner">
         <h1>Assets</h1>
-        <a class="btn tight-right" href="{{ url_for('ampissuer_endpoint.new_rawasset') }}"><img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/add.svg') }}"/> New asset</a>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_rawasset') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New asset</a>
     </div>
     {% for aid, asset in amp.rawassets.items() %}
     <div class="summary">
-        <a href="{{url_for('ampissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">{{ asset.ticker }} – {{ asset.name }}</a><br>
+        <a href="{{url_for('liquidissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">{{ asset.ticker }} – {{ asset.name }}</a><br>
         <small>Asset Id: {{ asset.asset_id }}</small>
         <hr/>
         <div class="row even">
@@ -44,7 +44,7 @@
             </div>
         </div>
         <div class="actions right">
-            <a href="{{url_for('ampissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">Settings</a>
+            <a href="{{url_for('liquidissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">Settings</a>
         </div>
     </div>
     {% endfor %}

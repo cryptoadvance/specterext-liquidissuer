@@ -1,12 +1,12 @@
 {% set navurl = request.path %}
 {% macro sidebar_btn(endpoint) -%}
-    <a href="{{url_for('ampissuer_endpoint.'+endpoint)}}" {% if url_for('ampissuer_endpoint.'+endpoint) == navurl %} class="selected" {% endif %}>
+    <a href="{{url_for('liquidissuer_endpoint.'+endpoint)}}" {% if url_for('liquidissuer_endpoint.'+endpoint) == navurl %} class="selected" {% endif %}>
 {% endmacro -%}
 
 <nav class="side">
     <a href="{{ url_for('welcome_endpoint.about') }}" class="logo">
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/blockstream_logo.png') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/blockstream_logo.png') }}"/>
         </div>
         <div class="menu-body">
             {{ "Liquid Mainnet" if specter.chain == "liquidv1" else "Liquid Testnet" }}<br>
@@ -20,7 +20,7 @@
     <h1>Normal assets</h1>
     {{ sidebar_btn('rawassets') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/asset.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/asset.svg') }}"/>
         </div>
         <div class="menu-body">
             Assets<br>
@@ -32,7 +32,7 @@
     <h1>Blockstream AMP</h1>
     {{ sidebar_btn('assets') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/asset.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/asset.svg') }}"/>
         </div>
         <div class="menu-body">
             AMP Assets<br>
@@ -41,7 +41,7 @@
     </a>
     {{ sidebar_btn('categories') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/category.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/category.svg') }}"/>
         </div>
         <div class="menu-body">
             Categories<br>
@@ -50,7 +50,7 @@
     </a>
     {{ sidebar_btn('users') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/users.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/users.svg') }}"/>
         </div>
         <div class="menu-body">
             Users<br>
@@ -59,7 +59,7 @@
     </a>
     {{ sidebar_btn('managers') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/managers.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/managers.svg') }}"/>
         </div>
         <div class="menu-body">
             Managers<br>
@@ -71,7 +71,7 @@
     <h1>Asset treasury</h1>
     {{ sidebar_btn('treasury') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/wallet.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/wallet.svg') }}"/>
         </div>
         <div class="menu-body">
             Treasury<br>
@@ -81,7 +81,7 @@
     <div class="spacer"></div>
     {{ sidebar_btn('settings_get') }}
         <div class="menu-icon">
-            <img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/settings.svg') }}"/>
+            <img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/settings.svg') }}"/>
         </div>
         <div class="menu-body">
             Settings<br>

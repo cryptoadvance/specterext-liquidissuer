@@ -15,17 +15,17 @@ from flask import flash, redirect, render_template, request, url_for
 from flask_babel import lazy_gettext as _
 from flask_login import current_user, login_required
 
-from .service import AmpissuerService
+from .service import LiquidissuerService
 
 logger = logging.getLogger(__name__)
 
-ampissuer_endpoint = AmpissuerService.blueprint
+liquidissuer_endpoint = LiquidissuerService.blueprint
 
-def ext() -> AmpissuerService:
+def ext() -> LiquidissuerService:
     ''' convenience for getting the extension-object'''
-    return app.specter.service_manager.services["ampissuer"]
+    return app.specter.service_manager.services["liquidissuer"]
 
-@ampissuer_endpoint.before_request
+@liquidissuer_endpoint.before_request
 def selfcheck():
     """check status before every request"""
     if '/static/' in request.path:
@@ -55,19 +55,19 @@ def selfcheck():
         # Force re-login; automatically redirects back to calling page
         return app.login_manager.unauthorized()
 
-@ampissuer_endpoint.route("/")
+@liquidissuer_endpoint.route("/")
 @login_required
 def index():
     if ext().amp.healthy:
-        return redirect(url_for('ampissuer_endpoint.assets'))
+        return redirect(url_for('liquidissuer_endpoint.assets'))
     else:
-        return redirect(url_for('ampissuer_endpoint.settings_get'))
+        return redirect(url_for('liquidissuer_endpoint.settings_get'))
 
-@ampissuer_endpoint.route("/rawassets/")
+@liquidissuer_endpoint.route("/rawassets/")
 def rawassets():
-    return render_template('ampissuer/rawassets.jinja', amp=ext().amp)
+    return render_template('liquidissuer/rawassets.jinja', amp=ext().amp)
 
-@ampissuer_endpoint.route("/new_rawasset/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/new_rawasset/", methods=["GET", "POST"])
 def new_rawasset():
     obj = {"raw": True}
     if request.method == "POST":
@@ -87,12 +87,12 @@ def new_rawasset():
         try:
             asset = ext().amp.new_rawasset(obj)
             flash(f"Asset {asset.ticker} was issued")
-            return redirect(url_for('ampissuer_endpoint.rawassets'))
+            return redirect(url_for('liquidissuer_endpoint.rawassets'))
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
+    return render_template('liquidissuer/new_asset.jinja', amp=ext().amp, rawasset=True, obj=obj)
 
-@ampissuer_endpoint.route("/rawasset/<asset_id>/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/rawasset/<asset_id>/", methods=["GET", "POST"])
 def rawasset(asset_id):
     asset = ext().amp.rawassets[asset_id]
     if request.method == "POST":
@@ -109,23 +109,23 @@ def rawasset(asset_id):
                 raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/rawasset.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/rawasset.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/")
+@liquidissuer_endpoint.route("/assets/")
 @login_required
 def assets():
     try:
-        return render_template('ampissuer/assets.jinja', amp=ext().amp)
+        return render_template('liquidissuer/assets.jinja', amp=ext().amp)
     except APIException as apie:
         logger.error(apie)
         flash_apiexc(apie)
         # ToDo: setting up API-Credentials in the settings endpoint
-        return redirect(url_for('ampissuer_endpoint.settings_get'))
+        return redirect(url_for('liquidissuer_endpoint.settings_get'))
     except Exception as e:
         logger.exception(e)
         raise e
 
-@ampissuer_endpoint.route("/new_asset/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/new_asset/", methods=["GET", "POST"])
 @login_required
 def new_asset():
     obj = {}
@@ -145,18 +145,18 @@ def new_asset():
         }
         try:
             asset = ext().amp.new_asset(obj)
-            return redirect(url_for('ampissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid))
+            return redirect(url_for('liquidissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid))
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/new_asset.jinja', amp=ext().amp, obj=obj)
+    return render_template('liquidissuer/new_asset.jinja', amp=ext().amp, obj=obj)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/")
 @login_required
 def asset(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
-    return render_template('ampissuer/asset/dashboard.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/dashboard.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/settings/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/settings/", methods=["GET", "POST"])
 @login_required
 def asset_settings(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
@@ -179,7 +179,7 @@ def asset_settings(asset_uuid):
                 flash('Requirements updated')
             elif action == "reissue":
                 txid = asset.reissue(int(request.form.get('reissue_amount', 0) or 0))
-                return redirect(url_for('ampissuer_endpoint.asset_reissuance', asset_uuid=asset.asset_uuid, txid=txid))
+                return redirect(url_for('liquidissuer_endpoint.asset_reissuance', asset_uuid=asset.asset_uuid, txid=txid))
             elif action == "fix_reissuances":
                 asset.fix_reissuances()
                 flash("Reissuances are fixed")
@@ -187,27 +187,27 @@ def asset_settings(asset_uuid):
                 raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/asset/settings.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/settings.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/assignments/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/assignments/")
 @login_required
 def asset_assignments(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
-    return render_template('ampissuer/asset/assignments.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/assignments.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/distributions/")
 @login_required
 def asset_distributions(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
-    return render_template('ampissuer/asset/distributions.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/distributions.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/activities/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/activities/")
 @login_required
 def asset_activities(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
-    return render_template('ampissuer/asset/base.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/base.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/utxos/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/utxos/", methods=["GET", "POST"])
 @login_required
 def asset_utxos(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
@@ -221,20 +221,20 @@ def asset_utxos(asset_uuid):
         except Exception as e:
             flash(f"{e}", "error")
     utxos = asset.get_utxos()
-    return render_template('ampissuer/asset/utxos.jinja', amp=ext().amp, asset=asset, utxos=utxos)
+    return render_template('liquidissuer/asset/utxos.jinja', amp=ext().amp, asset=asset, utxos=utxos)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/users/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/users/")
 @login_required
 def asset_users(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
-    return render_template('ampissuer/asset/users.jinja', amp=ext().amp, asset=asset)
+    return render_template('liquidissuer/asset/users.jinja', amp=ext().amp, asset=asset)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/new_assignment/", methods=["GET", "POST"])
 @login_required
 def new_assignment(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     if request.method == "GET":
-        return render_template('ampissuer/asset/new_assignment.jinja', amp=ext().amp, asset=asset)
+        return render_template('liquidissuer/asset/new_assignment.jinja', amp=ext().amp, asset=asset)
     # if POST request
     ass = []
     for uid in asset.users:
@@ -247,7 +247,7 @@ def new_assignment(asset_uuid):
                 raise ValueError()
         except:
             flash(f"Invalid amount: {amount}", "error")
-            return render_template('ampissuer/asset/new_assignment.jinja', amp=ext().amp, asset=asset)
+            return render_template('liquidissuer/asset/new_assignment.jinja', amp=ext().amp, asset=asset)
         if amount == 0:
             continue
         ass.append({
@@ -261,9 +261,9 @@ def new_assignment(asset_uuid):
         flash("Assignment created sucessfully")
     except Exception as e:
         flash(str(e), "error")
-    return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/assignment/<int:assid>/", methods=["POST"])
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/assignment/<int:assid>/", methods=["POST"])
 @login_required
 def change_assignment(asset_uuid, assid):
     asset = ext().amp.assets[asset_uuid]
@@ -278,22 +278,22 @@ def change_assignment(asset_uuid, assid):
             flash("Assignment locked")
     except Exception as e:
         flash(f"{e}", "error")
-    return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
 
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/new_distribution/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/new_distribution/")
 @login_required
 def new_distribution(asset_uuid):
     asset = ext().amp.assets[asset_uuid]
     try:
         duuid = asset.create_distribution()
         flash("Distribution created")
-        return redirect(url_for('ampissuer_endpoint.asset_distribution', asset_uuid=asset_uuid, duuid=duuid))
+        return redirect(url_for('liquidissuer_endpoint.asset_distribution', asset_uuid=asset_uuid, duuid=duuid))
     except Exception as e:
         flash(f"{e}", "error")
-    return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/distribution/<distribution_uuid>/", methods=["POST"])
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/distribution/<distribution_uuid>/", methods=["POST"])
 @login_required
 def change_distribution(asset_uuid, distribution_uuid):
     asset = ext().amp.assets[asset_uuid]
@@ -308,18 +308,18 @@ def change_distribution(asset_uuid, distribution_uuid):
             raise RuntimeError("Not implemented")
     except Exception as e:
         flash(f"{e}", "error")
-    return redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/")
 @login_required
 def asset_distribution(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
     distr = asset.get_distribution(duuid)
     if not distr:
-        redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
-    return render_template('ampissuer/asset/distribution.jinja', amp=ext().amp, asset=asset, distr=distr)
+        redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return render_template('liquidissuer/asset/distribution.jinja', amp=ext().amp, asset=asset, distr=distr)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/status/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/distributions/<duuid>/status/")
 @login_required
 def asset_distribution_status(asset_uuid, duuid):
     asset = ext().amp.assets[asset_uuid]
@@ -328,16 +328,16 @@ def asset_distribution_status(asset_uuid, duuid):
         return json.dumps({"error": "Distribution is not found"}), 404
     return json.dumps(distr)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/")
 @login_required
 def asset_reissuance(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
     reissuance = asset.get_reissuance(txid)
     if not reissuance:
-        redirect(url_for('ampissuer_endpoint.asset', asset_uuid=asset_uuid))
-    return render_template('ampissuer/asset/reissuance.jinja', amp=ext().amp, asset=asset, reissuance=reissuance)
+        redirect(url_for('liquidissuer_endpoint.asset', asset_uuid=asset_uuid))
+    return render_template('liquidissuer/asset/reissuance.jinja', amp=ext().amp, asset=asset, reissuance=reissuance)
 
-@ampissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/status/")
+@liquidissuer_endpoint.route("/assets/<asset_uuid>/reissuance/<txid>/status/")
 @login_required
 def asset_reissuance_status(asset_uuid, txid):
     asset = ext().amp.assets[asset_uuid]
@@ -347,12 +347,12 @@ def asset_reissuance_status(asset_uuid, txid):
     return json.dumps(reissuance)
 
 
-@ampissuer_endpoint.route("/categories/")
+@liquidissuer_endpoint.route("/categories/")
 @login_required
 def categories():
-    return render_template('ampissuer/categories.jinja', amp=ext().amp)
+    return render_template('liquidissuer/categories.jinja', amp=ext().amp)
 
-@ampissuer_endpoint.route("/new_category/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/new_category/", methods=["GET", "POST"])
 @login_required
 def new_category():
     obj = {}
@@ -369,22 +369,22 @@ def new_category():
             return redirect(url_for("categories"))
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/new_category.jinja', amp=ext().amp, obj=obj)
+    return render_template('liquidissuer/new_category.jinja', amp=ext().amp, obj=obj)
 
-@ampissuer_endpoint.route("/categories/<int:cid>/")
+@liquidissuer_endpoint.route("/categories/<int:cid>/")
 @login_required
 def category(cid):
-    return render_template('ampissuer/base.jinja', amp=ext().amp)
+    return render_template('liquidissuer/base.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/users/")
+@liquidissuer_endpoint.route("/users/")
 @login_required
 def users():
-    return render_template('ampissuer/users.jinja', amp=ext().amp)
+    return render_template('liquidissuer/users.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/new_user/", methods=["GET", "POST"])
-@ampissuer_endpoint.route("/new_user/for/<asset_uuid>/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/new_user/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/new_user/for/<asset_uuid>/", methods=["GET", "POST"])
 @login_required
 def new_user(asset_uuid=None):
     obj = {'categories': [] if asset_uuid is None else ext().amp.assets[asset_uuid]['requirements']}
@@ -403,13 +403,13 @@ def new_user(asset_uuid=None):
             uid = ext().amp.new_user(obj["user_name"], obj["user_GAID"], obj["is_company"], categories=categories)
             flash("User created")
             if asset_uuid:
-                return redirect(url_for('ampissuer_endpoint.asset_users', asset_uuid=asset_uuid))
-            return redirect(url_for('ampissuer_endpoint.user', uid=uid))
+                return redirect(url_for('liquidissuer_endpoint.asset_users', asset_uuid=asset_uuid))
+            return redirect(url_for('liquidissuer_endpoint.user', uid=uid))
         except Exception as e:
             flash(f"{e}", "error")
-    return render_template('ampissuer/new_user.jinja', amp=ext().amp, obj=obj)
+    return render_template('liquidissuer/new_user.jinja', amp=ext().amp, obj=obj)
 
-@ampissuer_endpoint.route("/users/<int:uid>/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/users/<int:uid>/", methods=["GET", "POST"])
 @login_required
 def user(uid):
     user = ext().amp.users[uid]
@@ -426,24 +426,24 @@ def user(uid):
             elif action == "delete":
                 ext().amp.delete_user(uid)
                 flash("User deleted")
-                return redirect(url_for('ampissuer_endpoint.users'))
+                return redirect(url_for('liquidissuer_endpoint.users'))
             else:
                 raise NotImplementedError(f"Unknown action {action}")
         except Exception as e:
             logger.exception(e)
             flash(f"{e}", "error")
-    return render_template('ampissuer/user.jinja', amp=ext().amp, user=user)
+    return render_template('liquidissuer/user.jinja', amp=ext().amp, user=user)
 
 
 
 
-@ampissuer_endpoint.route("/managers/")
+@liquidissuer_endpoint.route("/managers/")
 @login_required
 def managers():
-    return render_template('ampissuer/base.jinja', amp=ext().amp)
+    return render_template('liquidissuer/base.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/treasury/", methods=["GET", "POST"])
+@liquidissuer_endpoint.route("/treasury/", methods=["GET", "POST"])
 @login_required
 def treasury():
     if request.method == "POST":
@@ -465,20 +465,20 @@ def treasury():
         except Exception as e:
             logger.exception(e)
             flash(f"{e}", "error")
-    return render_template('ampissuer/treasury.jinja', amp=ext().amp)
+    return render_template('liquidissuer/treasury.jinja', amp=ext().amp)
 
 
-@ampissuer_endpoint.route("/settings/", methods=["GET"])
+@liquidissuer_endpoint.route("/settings/", methods=["GET"])
 @login_required
 def settings_get():
     amp_token = ext().get_amp_token()
-    return render_template('ampissuer/settings.jinja', 
+    return render_template('liquidissuer/settings.jinja', 
         amp=ext().amp, 
         amp_token=amp_token,
-        show_menu=AmpissuerService.id in app.specter.user_manager.get_user().services
+        show_menu=LiquidissuerService.id in app.specter.user_manager.get_user().services
     )
 
-@ampissuer_endpoint.route("/settings/", methods=["POST"])
+@liquidissuer_endpoint.route("/settings/", methods=["POST"])
 @login_required
 def settings_post():
     action = request.form.get("action")
@@ -488,7 +488,7 @@ def settings_post():
             token = ext().amp.obtain_token(request.form["amp_username"], request.form["amp_password"])
             ext().set_amp_token("token " + token)
             user = app.specter.user_manager.get_user()
-            user.add_service(AmpissuerService.id)
+            user.add_service(LiquidissuerService.id)
         except APIException as apie:
             flash_apiexc(apie)
         
@@ -499,17 +499,17 @@ def settings_post():
         logger.info("Saving")
         user = app.specter.user_manager.get_user()
         if request.form["show_menu"] == "yes":
-            user.add_service(AmpissuerService.id)
+            user.add_service(LiquidissuerService.id)
         else:
-            user.remove_service(AmpissuerService.id)
+            user.remove_service(LiquidissuerService.id)
     else:
         import time
         time.sleep(10)
         flash("Unknown action", "error")
-    return redirect(url_for('ampissuer_endpoint.settings_get'))
+    return redirect(url_for('liquidissuer_endpoint.settings_get'))
 
 
-@ampissuer_endpoint.route("/api/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
+@liquidissuer_endpoint.route("/api/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def api(path):
     return ext().amp.fetch(path, request.method, request.data, cache=False)

@@ -1,4 +1,4 @@
-{% extends "ampissuer/asset/base.jinja" %}
+{% extends "liquidissuer/asset/base.jinja" %}
 {% block assetmain %}
 <form action="./" method="POST">
     <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -25,9 +25,9 @@
                 <td>{{ user['id'] }}</td>
                 <td>
                     {% if user['is_company'] %}
-                    <img src="{{url_for('ampissuer_endpoint.static', filename='ampissuer/img/company.svg')}}"/>
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/company.svg')}}"/>
                     {% else %}
-                    <img src="{{url_for('ampissuer_endpoint.static', filename='ampissuer/img/person.svg')}}"/>
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/person.svg')}}"/>
                     {% endif %}
                     {{ user['name'] }}
                 </a></td>
@@ -51,6 +51,6 @@
         </tbody>
     </table>
 
-    <center><button type="submit"><img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/add.svg') }}"/> Create assignment</button></center>
+    <center><button type="submit"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> Create assignment</button></center>
 </form>
 {% endblock %}

@@ -1,8 +1,8 @@
-{% extends "ampissuer/asset/base.jinja" %}
+{% extends "liquidissuer/asset/base.jinja" %}
 {% block assetmain %}
 
 <h1>Asset settings</h1>
-<form action="{{url_for('ampissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid)}}" method="POST"><br>
+<form action="{{url_for('liquidissuer_endpoint.asset_settings', asset_uuid=asset.asset_uuid)}}" method="POST"><br>
 <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
 {% if asset.is_reissuable %}
 <div>

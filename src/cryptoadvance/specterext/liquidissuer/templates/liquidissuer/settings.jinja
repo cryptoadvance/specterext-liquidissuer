@@ -1,11 +1,11 @@
-{% extends "ampissuer/components/ampissuer_tab.jinja" %}
+{% extends "liquidissuer/components/liquidissuer_tab.jinja" %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/css/styles.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/css/styles.css') }}">
 {% endblock %}
 
 {% block sidebar %}
-{% include "ampissuer/components/sidebar.jinja" %}
+{% include "liquidissuer/components/sidebar.jinja" %}
 {% endblock %}
 
 {% block title %}Settings{% endblock %}

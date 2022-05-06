@@ -1,13 +1,13 @@
-{% extends "ampissuer/base.jinja" %}
+{% extends "liquidissuer/base.jinja" %}
 {% block main %}
 <main>
     <div class="row inner">
         <h1>AMP Assets</h1>
-        <a class="btn tight-right" href="{{ url_for('ampissuer_endpoint.new_asset') }}"><img src="{{ url_for('ampissuer_endpoint.static', filename='ampissuer/img/add.svg') }}"/> New asset</a>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_asset') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New asset</a>
     </div>
     {% for aid, asset in amp.assets.items() %}
     <div class="summary">
-        <a href="{{ url_for('ampissuer_endpoint.asset', asset_uuid=asset.asset_uuid) }}">{{ asset.ticker }} – {{ asset.name }}</a><br>
+        <a href="{{ url_for('liquidissuer_endpoint.asset', asset_uuid=asset.asset_uuid) }}">{{ asset.ticker }} – {{ asset.name }}</a><br>
         <small>Asset Id: {{ asset.asset_id }}</small>
         <hr/>
         <div class="row even">
@@ -18,7 +18,7 @@
                     <tr><td>Status:</td><td>{{ asset.status }}</td></tr>
                     <tr><td>Requirements:</td><td>
                         {% for cid, cat in asset.categories.items() %}
-                        <a href="{{ url_for('ampissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
+                        <a href="{{ url_for('liquidissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
                         {% endfor %}
                     </td></tr>
                     <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
@@ -46,10 +46,10 @@
         </div>
         <hr/>
         <div class="actions right">
-            <a href="{{url_for('ampissuer_endpoint.asset', asset_uuid=asset.asset_uuid)}}">Dashboard</a>
-            <a href="{{url_for('ampissuer_endpoint.asset_assignments', asset_uuid=asset.asset_uuid)}}">Assignments</a>
-            <a href="{{url_for('ampissuer_endpoint.asset_distributions', asset_uuid=asset.asset_uuid)}}">Distributions</a>
-            <a href="{{url_for('ampissuer_endpoint.asset_users', asset_uuid=asset.asset_uuid)}}">Users</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset', asset_uuid=asset.asset_uuid)}}">Dashboard</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_assignments', asset_uuid=asset.asset_uuid)}}">Assignments</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_distributions', asset_uuid=asset.asset_uuid)}}">Distributions</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_users', asset_uuid=asset.asset_uuid)}}">Users</a>
         </div>
     </div>
     {% endfor %}

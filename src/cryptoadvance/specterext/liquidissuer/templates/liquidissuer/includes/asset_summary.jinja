@@ -1,6 +1,6 @@
 {% set navurl = request.path %}
 {% macro assetbar_btn(endpoint) -%}
-    <a href="{{url_for('ampissuer_endpoint.'+endpoint, asset_uuid=asset.asset_uuid)}}" {% if url_for('ampissuer_endpoint.'+endpoint, asset_uuid=asset.asset_uuid) == navurl %} class="selected" {% endif %}>
+    <a href="{{url_for('liquidissuer_endpoint.'+endpoint, asset_uuid=asset.asset_uuid)}}" {% if url_for('liquidissuer_endpoint.'+endpoint, asset_uuid=asset.asset_uuid) == navurl %} class="selected" {% endif %}>
 {% endmacro -%}
 
 <div class="summary">
@@ -15,7 +15,7 @@
                 <tr><td>Status:</td><td>{{ asset.status }}</td></tr>
                 <tr><td>Requirements:</td><td>
                     {% for cid, cat in asset.categories.items() %}
-                    <a href="{{ url_for('ampissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
+                    <a href="{{ url_for('liquidissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
                     {% endfor %}
                 </td></tr>
                 <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>

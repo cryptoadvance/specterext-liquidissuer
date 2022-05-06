@@ -1,0 +1,42 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <div class="row inner">
+        <h1>Registered Users</h1>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_user') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New user</a>
+    </div>
+
+    <table class="table">
+        <thead><tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>GAID</th>
+            <th>Categories</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.users %}
+            <tr><td colspan=4>No users</td></tr>
+        {% endif %}
+        {% for uid, user in amp.users.items() %}
+            <tr>
+                <td><a href="{{url_for('liquidissuer_endpoint.user', uid=user['id'])}}">{{ user['id'] }}</a></td>
+                <td><a href="{{url_for('liquidissuer_endpoint.user', uid=user['id'])}}">
+                    {% if user['is_company'] %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/company.svg')}}"/>
+                    {% else %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/person.svg')}}"/>
+                    {% endif %}
+                    {{ user['name'] }}
+                </a></td>
+                <td><a href="{{url_for('liquidissuer_endpoint.user', uid=user['id'])}}">{{ user['GAID'] }}</a></td>
+                <td>
+                    {% for cid, cat in user.categories.items() %}
+                    <a href="{{ url_for('liquidissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</main>
+{% endblock %}
