@@ -335,6 +335,10 @@ input[type="checkbox"]:checked + .btn.hovering
     border-radius: 0 10px 10px 0;
 }
 
+.btn.radio.right.left{
+    border-radius: 10px 10px 10px 10px;
+}
+
 nav.collapse-on-mobile a.mobile-nav-icon {
     display: none;
 }

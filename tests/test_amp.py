@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from cryptoadvance.specterext.ampissuer.amp import Amp
+from cryptoadvance.specterext.liquidissuer.amp import Amp
 
 
 @pytest.mark.skip("dependent on credentials")
