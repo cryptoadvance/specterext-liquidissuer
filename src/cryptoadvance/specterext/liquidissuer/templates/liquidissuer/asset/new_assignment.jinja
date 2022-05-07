@@ -1,0 +1,56 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+<form action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="inner">
+        <h1>Create new assignments</h1>
+        <small>Enter amounts in the table below. Keep 0 if you don't want to assign to this user.</small>
+    </div>
+
+    <table class="table">
+        <thead><tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>GAID</th>
+            <th>Categories</th>
+            <th>Amount</th>
+            <th>Ready for distribution?</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.users %}
+            <tr><td colspan=5>No users</td></tr>
+        {% endif %}
+        {% for uid, user in asset.users.items() %}
+            <tr>
+                <td>{{ user['id'] }}</td>
+                <td>
+                    {% if user['is_company'] %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/company.svg')}}"/>
+                    {% else %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/person.svg')}}"/>
+                    {% endif %}
+                    {{ user['name'] }}
+                </a></td>
+                <td>{{ user['GAID'] }}</td>
+                <td>
+                    {% for cid, cat in user.categories.items() %}
+                    <a class="tag">{{cat["name"]}}</a>
+                    {% endfor %}
+                </td>
+                <td  width="100px">
+                    <input type="number" name="amount_{{user['id']}}" value="0" min="0"/>
+                </td>
+                <td>
+                    <label for="ready_for_distribution_{{user['id']}}" class="inline">
+                        <input type="checkbox" checked id="ready_for_distribution_{{user['id']}}" name="ready_for_distribution_{{user['id']}}">
+                        <small>Ready for distribution</small>
+                    </label>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <center><button type="submit"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> Create assignment</button></center>
+</form>
+{% endblock %}

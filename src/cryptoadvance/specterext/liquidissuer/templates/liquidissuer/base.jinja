@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AMP issuer</title>
+<link rel="shortcut icon" type="image/png" href="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/blockstream_logo.png')}}"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" type="text/css" href="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/styles.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/custom_select.css') }}">
+<script type="text/javascript" src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/helpers.js')}}"></script>
+{% block head %}
+{% endblock %}
+</head>
+
+<body>
+<div class="pageloader" id="pageloader"></div>
+{% include "liquidissuer/includes/message-box.html" %}
+<div id="messages">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages | unique %}
+                <message-box type="{{ category }}">{{ message }}</message-box>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% if error %}
+        <message-box type="error">{{ _("ERROR:") }} {{error}}</message-box>
+    {% endif %}
+</div>
+
+{% block sidebar %}
+{% include "liquidissuer/components/sidebar.jinja" %}
+{% endblock %}
+
+{% block main %}
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
+<script src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/custom_select.js') }}"></script>
+</body>
+</html>

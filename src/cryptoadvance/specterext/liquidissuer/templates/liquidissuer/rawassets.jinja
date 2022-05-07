@@ -1,0 +1,52 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <div class="row inner">
+        <h1>Assets</h1>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_rawasset') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New asset</a>
+    </div>
+    {% for aid, asset in amp.rawassets.items() %}
+    <div class="summary">
+        <a href="{{url_for('liquidissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">{{ asset.ticker }} – {{ asset.name }}</a><br>
+        <small>Asset Id: {{ asset.asset_id }}</small>
+        <hr/>
+        <div class="row even">
+            <div>
+                <h2>General information</h2>
+                <table class="labeled">
+                    <tr><td>Type:</td><td>Standard asset</td></tr>
+                    <tr><td>Status:</td><td>{{asset.status}}</td></tr>
+                    <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
+                    <tr><td>Balance:</td><td>{{asset.balance()['trusted']}} sats</td></tr>
+                </table>
+            </div>
+            <div>
+                <h2>Contract information</h2>
+                <table class="labeled">
+                    <tr><td>Ticker:</td><td>{{ asset.ticker }} </td></tr>
+                    <tr><td>Name:</td><td>{{ asset.name }} </td></tr>
+                    <tr><td>Domain:</td><td>{{ asset.domain }} </td></tr>
+                    <tr><td>Precision:</td><td>1 {{ asset.ticker }} = {{ asset.in_sats }} {{ "sats" if asset.precision > 0 else "sat" }}</td></tr>
+                </table>
+            </div>
+            <div>
+                <h2>Registry information</h2>
+                <table class="labeled">
+                {% if asset.is_registered %}
+                    {% set summary = asset.esplora_info.get("chain_stats", {}) %}
+                    <tr><td>Issued total:</td><td>{{ summary.get('issued_amount', "unknown") }} </td></tr>
+                    <tr><td>Reissuance:</td><td>{{ asset.token_amount }}</td></tr>
+                    <tr><td>Burned:</td><td>{{ summary.get('burned_amount', "unknown") }}</td></tr>
+                {% else %}
+                    <tr><td>Asset is not registered yet</td><td></td></tr>
+                {% endif %}
+                </table>
+            </div>
+        </div>
+        <div class="actions right">
+            <a href="{{url_for('liquidissuer_endpoint.rawasset', asset_id=asset.asset_id)}}">Settings</a>
+        </div>
+    </div>
+    {% endfor %}
+</main>
+{% endblock %}

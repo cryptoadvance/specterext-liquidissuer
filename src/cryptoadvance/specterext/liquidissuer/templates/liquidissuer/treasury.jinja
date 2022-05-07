@@ -1,0 +1,60 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+{% include "includes/qr-code.html" %}
+<form action="." method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <h1>Treasury – default Elements Core wallet</h1>
+    <hr>
+    <h1 class="center">Receive address</h1>
+    <qr-code value="{{ amp.address }}" width="300px" style="margin: 10px"></qr-code>
+    <center><code style="font-size: 14px;">{{ amp.address }}</code></center><br>
+    <center><button type="submit" name="action" value="getnewaddress">Get new address</button></center>
+    <hr>
+    <h1 class="center">Balance</h1>
+    <br>
+    {% set balance = amp.get_balance_sats() %}
+    {% set tickers = amp.tickers %}
+    <center>L-BTC: {{ balance["bitcoin"] }} sats</center><br>
+    <center>
+    {% for asset, ticker in tickers.items() %}
+        <div style="margin: 3px 10px; display: inline-block;">{{ ticker }}: {{ balance.get(asset, 0) }} sats</div>
+    {% endfor %}
+    </center>
+    <h2 class="center"><b>Other assets</b></h2>
+    <center>
+    {% for k, amount in balance.items() %}
+        {% if k not in tickers and k != "bitcoin" %}
+            <div style="margin: 3px; display: inline-block;">{{k | assetlabel}}: {{amount}} sats</div>
+        {% endif %}
+    {% endfor %}
+    </center>
+    <hr>
+    <h1 class="center">Send</h1>
+    <br>
+    <center>
+        <input type="number" name="sendamount" id="sendamount" placeholder="amount in sats" value="0" step="1" style="width: 200px"> sats of
+        &nbsp;
+        <select name="asset" style="width: 200px">
+            <option value="bitcoin">LBTC</option>
+            {% for asset in balance %}
+                {% if asset != "bitcoin" %}
+                    {% if asset not in tickers %}
+                    <option value="{{asset}}">{{ asset | assetlabel }}</option>
+                    {% else %}
+                    <option value="{{asset}}">{{ tickers[asset] }}</option>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </select>
+        &nbsp;
+        to
+        &nbsp;
+        <input type="text" name="sendaddress" id="sendaddress" placeholder="destination address" style="width: 400px">
+        &nbsp;
+        <button type="submit" name="action" value="send">Send</button>
+    </center>
+    <hr>
+</form>
+</main>
+{% endblock %}

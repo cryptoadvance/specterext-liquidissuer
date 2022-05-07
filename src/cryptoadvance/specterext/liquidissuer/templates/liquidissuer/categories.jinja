@@ -1,0 +1,39 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <div class="row inner">
+        <h1>Categories</h1>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_category') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New category</a>
+    </div>
+
+    <table class="table">
+        <thead><tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Investors</th>
+            <th>Users</th>
+            <th>Assets</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.categories %}
+            <tr><td colspan=6>No categories</td></tr>
+        {% endif %}
+        {% for cid, category in amp.categories.items() %}
+            <tr>
+                <td><a href="{{url_for('liquidissuer_endpoint.category', cid=cid)}}">{{ category['id'] }}</a></td>
+                <td><a href="{{url_for('liquidissuer_endpoint.category', cid=cid)}}">{{ category['name'] }}</a></td>
+                <td><a href="{{url_for('liquidissuer_endpoint.category', cid=cid)}}">{{ category['description'] }}</a></td>
+                <td>{{ category['investors'] | length }}</td>
+                <td>{{ category['registered_users'] | length }}</td>
+                <td>
+                    {% for aid in category['assets'] %}
+                    <a href="{{ url_for('liquidissuer_endpoint.asset', asset_uuid=aid) }}" class="tag">{{ amp.assets[aid].ticker }}</a>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</main>
+{% endblock %}

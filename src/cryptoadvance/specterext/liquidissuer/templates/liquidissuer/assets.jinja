@@ -1,0 +1,57 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <div class="row inner">
+        <h1>AMP Assets</h1>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_asset') }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New asset</a>
+    </div>
+    {% for aid, asset in amp.assets.items() %}
+    <div class="summary">
+        <a href="{{ url_for('liquidissuer_endpoint.asset', asset_uuid=asset.asset_uuid) }}">{{ asset.ticker }} – {{ asset.name }}</a><br>
+        <small>Asset Id: {{ asset.asset_id }}</small>
+        <hr/>
+        <div class="row even">
+            <div>
+                <h2>General information</h2>
+                <table class="labeled">
+                    <tr><td>Type:</td><td>{{ asset.asset_type }}</td></tr>
+                    <tr><td>Status:</td><td>{{ asset.status }}</td></tr>
+                    <tr><td>Requirements:</td><td>
+                        {% for cid, cat in asset.categories.items() %}
+                        <a href="{{ url_for('liquidissuer_endpoint.category', cid=cid) }}" class="tag">{{cat["name"]}}</a>
+                        {% endfor %}
+                    </td></tr>
+                    <tr><td>Treasury:</td><td>Elements Core (default)</td></tr>
+                    <tr><td>Balance:</td><td>{{asset.balance()['trusted']}} sats</td></tr>
+                </table>
+            </div>
+            <div>
+                <h2>Blockchain information</h2>
+                {% set summary = asset.summary %}
+                <table class="labeled">
+                    <tr><td>Issued total:</td><td>{{ summary['issued'] + summary['reissued'] }} </td></tr>
+                    <tr><td>Reissuance:</td><td>{{ summary['reissuance_tokens'] }}</td></tr>
+                    <tr><td>Owners:</td><td>{{ summary['active_registered_users'] }} users, {{ summary['distributed'] }} distributed</td></tr>
+                    <tr><td>Blacklisted:</td><td>{{ summary['blacklisted'] }}</td></tr>
+                </table>
+            </div>
+            <div>
+                <h2>AMP stats</h2>
+                <table class="labeled">
+                    <tr><td>Assignments:</td><td>{{ asset.pending_assignments | length }} pending, {{ asset.assignments | length }} total</td></tr>
+                    <tr><td>Distributions:</td><td>{{ asset.unconfirmed_distributions | length }} unconfirmed, {{ asset.distributions | length }} total</td></tr>
+                    <tr><td>Lost outputs:</td><td>{{ (asset.lost_outputs['lost_outputs'] | length) + (asset.lost_outputs['reissuance_lost_outputs'] | length) }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <hr/>
+        <div class="actions right">
+            <a href="{{url_for('liquidissuer_endpoint.asset', asset_uuid=asset.asset_uuid)}}">Dashboard</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_assignments', asset_uuid=asset.asset_uuid)}}">Assignments</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_distributions', asset_uuid=asset.asset_uuid)}}">Distributions</a>
+            <a href="{{url_for('liquidissuer_endpoint.asset_users', asset_uuid=asset.asset_uuid)}}">Users</a>
+        </div>
+    </div>
+    {% endfor %}
+</main>
+{% endblock %}

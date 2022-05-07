@@ -1,0 +1,128 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+
+<div class="inner row">
+    <div>
+        <h1>Pending assignments – {{ asset.pending_assignments | length }}</h1>
+        <div class="small tight-top">Select assignments from the list to create a new distribution</div>
+    </div>
+    <div><br>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_assignment', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New assignment</a>
+    </div>
+</div>
+<table class="table">
+    <thead><tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th width="200px"><!-- Actions --></th>
+    </tr></thead>
+    <tbody>
+        {# <form action="{{url_for('liquidissuer_endpoint.new_assignment', asset_uuid=asset.asset_uuid)}}" method="POST">
+        <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+        <tr>
+            <td><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/></td>
+            <td>
+                <div class="custom-select">
+                <select name="registered_user">
+                    <option value="">Please select a user</option>
+                    {% for uid, user in amp.users.items() %}
+                    <option value="{{uid}}">{{user['name']}} – {{user['GAID']}}</option>
+                    {% endfor %}
+                </select>
+                </div>
+            </td>
+            <td><input type="number" placeholder="amount" name="amount"/></td>
+            <td>
+                <label for="ready_for_distribution" class="inline">
+                    <input type="checkbox" checked id="ready_for_distribution" name="ready_for_distribution">
+                    <div>Ready for distribution</div>
+                </label>
+            </td>
+            <td>
+                <button type="submit" class="btn" name="submit"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> Create assignment</button>
+            </td>
+        </tr>
+        </form> #}
+    {% if not asset.pending_assignments %}
+        <tr><td colspan=5>No pending assignments</td></tr>
+    {% endif %}
+    {% for ass in asset.pending_assignments %}
+        <tr>
+            <td>{{ass['id']}}</td>
+            <td>{{amp.users[ass['registered_user']]['name']}}</td>
+            <td>{{ass['amount']}}</td>
+            {% if ass['distribution_uuid'] %}
+                <td colspan=2>
+                    <small>Pending distribution</small> {{ ass['distribution_uuid'] }}
+                </td>
+            {% else %}
+                <td>
+                {% if ass['ready_for_distribution'] %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/check.svg')}}"/> Ready
+                {% else %}
+                    <img src="{{url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/lock.svg')}}"/> Locked
+                {% endif %}
+                </td>
+                <td class="onhover" width="300px" style="text-align: right">
+                    <form class="controls" action="{{url_for('liquidissuer_endpoint.change_assignment', asset_uuid=asset.asset_uuid, assid=ass['id'])}}" method="POST">
+                    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+                    {% if ass['ready_for_distribution'] %}
+                    <button type="submit" name="action" value="lock"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/lock.svg') }}"/> Lock</button>
+                    {% else %}
+                    <button type="submit" name="action" value="unlock"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/unlock.svg') }}"/> Unlock</button>
+                    {% endif %}
+                    <button type="submit" name="action" value="delete" class="danger" onclick="return confirm('Are you sure you want to delete this assignment?')"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/delete.svg') }}"/> Delete</button>
+                    </form>
+                </td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<hr/>
+
+<div class="row inner">
+    <div>
+        <h1>Unconfirmed distributions – {{ asset.unconfirmed_distributions | length }}</h1>
+        <div class="small tight-top">Select distributions from the list to sign and broadcast</div>
+    </div>
+    <div><br>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_distribution', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New distribution</a>
+    </div>
+</div>
+<table class="table">
+    <thead><tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Transaction</th>
+        <th>Amount</th>
+        <th>Assignments</th>
+        <th width="200px"><!-- Actions --></th>
+    </tr></thead>
+    <tbody>
+    {% if not asset.unconfirmed_distributions %}
+        <tr><td colspan=6>No unconfirmed distributions</td></tr>
+    {% endif %}
+    {% for dist in asset.unconfirmed_distributions %}
+        <tr>
+            <td><a href="{{url_for('liquidissuer_endpoint.asset_distribution', asset_uuid=asset.asset_uuid, duuid=dist['distribution_uuid'])}}">{{ dist['distribution_uuid'] }}</a></td>
+            <td>{{ dist['distribution_status'] }}</td>
+            <td>{{ dist['transactions'][0]['txid'] or "-" }}</td>
+            <td>{{ dist['transactions'][0]['assignments'] | sum(attribute='amount') }}</td>
+            <td>{{ dist['transactions'][0]['assignments'] | length }}</td>
+            <td class="onhover">
+                <form class="controls" action="{{url_for('liquidissuer_endpoint.change_distribution', asset_uuid=asset.asset_uuid, distribution_uuid=dist['distribution_uuid'])}}" method="POST">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% if not dist['transactions'][0]['txid'] %}
+                    <button type="submit" name="action" value="cancel" class="danger" onclick="return confirm('Are you sure you want to cancel this distribution?')"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/delete.svg') }}"/> Cancel</button>
+                {% endif %}
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<hr/>
+{% endblock %}

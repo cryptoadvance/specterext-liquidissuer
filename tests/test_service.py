@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from cryptoadvance.specter.services.callbacks import after_serverpy_init_app
-from cryptoadvance.specterext.ampissuer.rpc import find_rpc
-from cryptoadvance.specterext.ampissuer.service import AmpissuerService
+from cryptoadvance.specterext.liquidissuer.rpc import find_rpc
+from cryptoadvance.specterext.liquidissuer.service import liquidissuerService
 from cryptoadvance.specter.process_controller.bitcoind_controller import BitcoindPlainController
 from flask import Flask
 
 @patch("cryptoadvance.specter.services.service.ServiceEncryptedStorageManager")
-def test_AmpissuerService(svc_ESM_mock, mock_specter,mock_flaskapp):
+def test_liquidissuerService(svc_ESM_mock, mock_specter,mock_flaskapp):
     mock_flaskapp.config["API_TESTNET_URL"] = "https://amp-test.blockstream.com/api/"
     mock_specter.is_liquid.return_value = True
     mock_specter.is_testnet.return_value = True
@@ -17,7 +17,7 @@ def test_AmpissuerService(svc_ESM_mock, mock_specter,mock_flaskapp):
         mock_specter.rpc.unloadwallet("")
         
     assert '' not in mock_specter.rpc.listwallets()
-    amp_svc = AmpissuerService(True, mock_specter)
+    amp_svc = liquidissuerService(True, mock_specter)
     amp_svc.callback(after_serverpy_init_app)
     amp = amp_svc.amp
     assert '' in mock_specter.rpc.listwallets()
@@ -38,7 +38,7 @@ def mock_flaskapp(mock_specter):
 
     flaskapp_mock = Flask(__name__)
     flaskapp_mock.config["EXTENSION_LIST"] = [
-        "cryptoadvance.specterext.ampissuer.service"
+        "cryptoadvance.specterext.liquidissuer.service"
     ]
     flaskapp_mock.config["ISOLATED_CLIENT_EXT_URL_PREFIX"] = "/spc/ext"
     flaskapp_mock.config["EXT_URL_PREFIX"] = "/ext"

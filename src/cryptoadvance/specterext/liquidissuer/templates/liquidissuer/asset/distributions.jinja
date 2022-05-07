@@ -1,0 +1,44 @@
+{% extends "liquidissuer/asset/base.jinja" %}
+{% block assetmain %}
+<div class="row inner">
+    <div>
+        <h1>Distributions – {{ asset.distributions | length }}</h1>
+        <div class="small tight-top">Select distributions from the list to sign and broadcast</div>
+    </div>
+    <div><br>
+        <a class="btn tight-right" href="{{ url_for('liquidissuer_endpoint.new_distribution', asset_uuid=asset.asset_uuid) }}"><img src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/add.svg') }}"/> New distribution</a>
+    </div>
+</div>
+<table class="table">
+    <thead><tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Transaction</th>
+        <th>Amount</th>
+        <th>Assignments</th>
+        <th width="200px"><!-- Actions --></th>
+    </tr></thead>
+    <tbody>
+    {% if not asset.distributions %}
+        <tr><td colspan=6>No distributions</td></tr>
+    {% endif %}
+    {% for dist in asset.distributions %}
+        <tr>
+            <td>{{ dist['distribution_uuid'] }}</td>
+            <td>{{ dist['distribution_status'] }}</td>
+            <td>{{ dist['transactions'][0]['txid'] or "-" }}</td>
+            <td>{{ dist['transactions'][0]['assignments'] | sum(attribute='amount') }}</td>
+            <td>{{ dist['transactions'][0]['assignments'] | length }}</td>
+            <td class="onhover">
+                <form class="controls" action="{{url_for('liquidissuer_endpoint.change_distribution', asset_uuid=asset.asset_uuid, distribution_uuid=dist['distribution_uuid'])}}" method="POST">
+                <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% if not dist['transactions'][0]['txid'] %}
+                    <button type="submit" name="action" value="cancel" class="danger" onclick="return confirm('Are you sure you want to cancel this distribution?')"><img class="tiny" src="{{ url_for('liquidissuer_endpoint.static', filename='liquidissuer/img/delete.svg') }}"/> Cancel</button>
+                {% endif %}
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

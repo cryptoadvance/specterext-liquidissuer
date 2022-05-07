@@ -1,0 +1,17 @@
+{% from 'components/menu_item.jinja' import menu_item %}
+
+{# 
+    liquidissuer_menu - Tabs menu to navigate between the liquidissuer screens.
+    Parameters:
+    - active_menuitem: Current active tab. Options: 'general', 'settings', ...
+ #}
+{% macro liquidissuer_menu(active_menuitem) -%}
+	{# As long as we don't have at least 2 menupoints, a menu doesn't make any sense 
+	<nav class="row collapse-on-mobile">
+		{{ menu_item(service.id, 'settings_get', 'Settings', active_menuitem, isRight=true, isLeft=true) }}
+		<a href="javascript:void(0);" class="mobile-nav-icon" onclick="toggleMobileNav(this, `{{ url_for('static', filename='liquidissuer/img/expand-more.svg') }}`, `{{ url_for('static', filename='img/expand-less.svg') }}`)">
+			<img style="width: 36px;" src="{{ url_for('static', filename='liquidissuer/img/expand-more.svg') }}"/>
+		</a>
+	</nav>
+	#}
+{%- endmacro %}

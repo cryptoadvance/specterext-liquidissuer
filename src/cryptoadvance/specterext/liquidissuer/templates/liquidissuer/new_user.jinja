@@ -1,0 +1,50 @@
+{% extends "liquidissuer/base.jinja" %}
+{% block main %}
+<main>
+    <form action="./" method="POST">
+    <input type="hidden" class="csrf-token" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="new-form">
+        <h1>Create new user</h1>
+        <br>
+        <label for="user_name">User name</label>
+        <input type="text" id="user_name" name="user_name" placeholder="User name" value="{{obj.get('user_name','')}}"><br>
+        <label for="user_GAID">GAID - Green Address ID</label>
+        <input type="text" id="user_GAID" name="user_GAID" placeholder="GAID" value="{{obj.get('user_GAID','')}}"><br>
+        <label class="checkbox" for="is_company"><input type="checkbox" id="is_company" name="is_company" {{'checked' if obj.get('is_company') else ''}}> Company</label>
+        <hr>
+    </div>
+    <h1 class="center">Add to categories</h1>
+    <table class="table" style="max-width: 900px; margin: auto;">
+        <thead><tr>
+            <th width="50px">&nbsp;</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Assets</th>
+        </tr></thead>
+        <tbody>
+        {% if not amp.categories %}
+            <tr><td colspan=5>No categories</td></tr>
+        {% endif %}
+        {% for cid, category in amp.categories.items() %}
+            <tr>
+                <td><input type="checkbox" name="cid_{{cid}}" {{ 'checked' if cid in obj.get('categories', []) else '' }}/></td>
+                <td>{{ category['id'] }}</td>
+                <td>{{ category['name'] }}</td>
+                <td>{{ category['description'] }}</td>
+                <td>
+                    {% for aid in category['assets'] %}
+                    <a class="tag">{{ amp.assets[aid].ticker }}</a>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <br><br>
+    <center>
+        <button type="submit" name="action" value="create">Create new user</button>
+    </center>
+    </form>
+</main>
+{% endblock %}

@@ -14,7 +14,7 @@ def cli():
 @click.option(
     "--host",
     default="127.0.0.1",
-    help="if you specify --host 0.0.0.0 then Ampissuer will be available in your local LAN.",
+    help="if you specify --host 0.0.0.0 then Liquidissuer will be available in your local LAN.",
 )
 @click.option(
     "--ssl/--no-ssl",
@@ -31,7 +31,7 @@ def cli():
 )
 def start(ctx, host, ssl, debug, filelog, config):
     if config == None:
-        config = "cryptoadvance.specterext.ampissuer.config.AppProductionConfig"
+        config = "cryptoadvance.specterext.liquidissuer.config.AppProductionConfig"
     ctx.invoke(server, host=host, ssl=ssl, debug=debug, filelog=filelog, port=8080, config=config)
     
 entry_point.add_command(start)
