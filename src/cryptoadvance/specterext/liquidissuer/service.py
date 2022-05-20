@@ -3,7 +3,7 @@ import logging
 from cryptoadvance.specter.rpc import BitcoinRPC
 from cryptoadvance.specter.services.callbacks import after_serverpy_init_app
 from cryptoadvance.specter.services.service import (Service, devstatus_alpha,
-                                                    devstatus_beta)
+                                                    devstatus_beta, devstatus_prod)
 # A SpecterError can be raised and will be shown to the user as a red banner
 from cryptoadvance.specter.specter_error import SpecterError
 from cryptoadvance.specter.wallet import Wallet
@@ -24,7 +24,7 @@ class LiquidissuerService(Service):
     desc = "Issuing Amp Assets."
     has_blueprint = True
     blueprint_module = "cryptoadvance.specterext.liquidissuer.controller"
-    devstatus = devstatus_beta
+    devstatus = devstatus_prod
     isolated_client = False
 
     AMP_TESTNET_CREDS = "amp_testnet_creds"
